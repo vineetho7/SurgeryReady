@@ -22,6 +22,15 @@ export default defineConfig({
     host: 'localhost',
     port: 3000,
   },
+  /*
+   * `vite preview` rejects Host headers it does not recognise, so a deployed build
+   * answers every request with 403 "This host is not allowed". The hostname is
+   * assigned by the platform and is not known at build time, hence `true` rather
+   * than a list. Safe here because preview only ever serves the static dist.
+   */
+  preview: {
+    allowedHosts: true,
+  },
   test: {
     globals: true,
   },

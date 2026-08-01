@@ -8,7 +8,11 @@
 #
 # Debian rather than Alpine on purpose: @moss-dev/moss-core ships linux-x64-gnu
 # and has no musl target, so an Alpine base finds no native binary.
-FROM node:22-slim
+#
+# trixie, not the default bookworm: moss-core's .node is linked against
+# GLIBC_2.38 and bookworm ships 2.36, which fails at dlopen rather than at
+# install — the deploy goes green and then crashes on first require.
+FROM node:22-trixie-slim
 
 WORKDIR /repo
 
