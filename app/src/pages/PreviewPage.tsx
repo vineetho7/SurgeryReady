@@ -1,6 +1,7 @@
 import type { JSX } from 'react';
 import { FootMap } from '../components/FootMap';
 import { IconGauge, IconLayers, IconTarget, IconWalk } from '../components/icons';
+import { PlantarPressure } from '../components/PlantarPressure';
 import { StatusPill } from '../components/StatusPill';
 import { TrendChart } from '../components/TrendChart';
 import type { RecoveryDay, ZoneReading } from '../lib/fhir';
@@ -162,6 +163,8 @@ export function PreviewPage(): JSX.Element {
               <FootMap zones={ZONES} side="right foot" />
             </div>
           </div>
+
+          <PlantarPressure />
 
           <div className="card">
             <div className="card-head">

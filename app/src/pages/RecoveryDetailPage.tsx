@@ -2,6 +2,7 @@ import type { JSX } from 'react';
 import { useParams } from 'react-router';
 import { BackLink, Delta } from '../components/BackLink';
 import { FootMap } from '../components/FootMap';
+import { PlantarPressure } from '../components/PlantarPressure';
 import { RelevantHistory } from '../components/RelevantHistory';
 import { IconGauge, IconLayers, IconTarget, IconWalk } from '../components/icons';
 import { StatusPill } from '../components/StatusPill';
@@ -123,6 +124,8 @@ export function RecoveryDetailPage(): JSX.Element {
             <FootMap zones={item.zones} side={item.side} />
           </div>
         </div>
+
+        <PlantarPressure />
 
         <div className="card">
           <div className="card-head">

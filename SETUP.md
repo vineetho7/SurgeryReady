@@ -167,6 +167,28 @@ injects into the same conversation.
 `/preview` renders every visual component against fixed data with no authentication —
 useful for checking layout without touching the live project.
 
+## Plantar pressure data
+
+The *mean*, *peak* and *By zone* cards read a recorded insole session from
+`app/public/insole/*.json` — the full 16 x 8 sensor grid, which is what makes the maps
+continuous rather than five flat zones. That JSON is reduced from a StrideTrack
+recording CSV by a converter kept with the acquisition tooling:
+
+```bash
+python3 InsoleDataRecord/insole_to_webapp.py data/LEFT_limp_1.csv data/RIGHT_limp_1.csv
+# -> app/public/insole/<name>.json   (numpy required)
+```
+
+The side is inferred from the filename, and LEFT recordings are mirrored during
+conversion so both feet arrive medial-first — the app mirrors the drawing, never the
+data. To show a different session, regenerate for the recordings you want and change
+`SESSION` in `app/src/components/PlantarPressure.tsx`.
+
+**The pressures are uncalibrated raw counts, not kPa.** Only ratios between the two feet
+mean anything, so within a card both feet always share one color scale. Mean and peak
+get separate scales, because mean pressure over a session tops out far below peak and
+one ceiling for both paints the mean map a pale wash.
+
 ## Troubleshooting
 
 **Voice panel says "Agent offline."** The server isn't running or isn't up yet. Watch for
