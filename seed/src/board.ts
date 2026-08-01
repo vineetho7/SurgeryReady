@@ -21,6 +21,15 @@ export interface BoardCase {
   minute: number;
   language?: { code: string; display: string };
   /**
+   * Insurance on file, checked live against Stedi test mode during seeding.
+   *
+   * Payer 60054 (Aetna) resolves in test mode and returns active coverage with real
+   * benefit amounts. Any other payer/member pair comes back "Subscriber/Insured Not
+   * Found" — which is not a bug, it is the case we want to demonstrate: a patient who
+   * answered every question correctly and would still be turned away at the desk.
+   */
+  coverage?: { payerId: string; memberId: string };
+  /**
    * Results of the readiness call, if it has already happened.
    * Undefined means the call has not been made — readiness derives to 'unknown'.
    */
@@ -81,6 +90,9 @@ export const BOARD: BoardCase[] = [
     procedureDisplay: 'Cataract extraction',
     hour: 8,
     minute: 30,
+    // Answers every question correctly, but the payer cannot confirm the member. This is
+    // the case the six spoken checks cannot catch.
+    coverage: { payerId: '62308', memberId: 'CIGNA55512' },
     checks: {
       arrival: ok('Half seven, and I bring the ID and the insurance card.'),
       npo: ok('No breakfast. Water up to two hours before, they said.'),

@@ -2,7 +2,6 @@ import type { JSX } from 'react';
 import { useParams } from 'react-router';
 import { BackLink } from '../components/BackLink';
 import { StatusPill } from '../components/StatusPill';
-import { VoicePanel } from '../components/VoicePanel';
 import { useBoard } from '../lib/fhir';
 import { CHECK_LABEL, READINESS_LABEL, READINESS_TONE, type CheckResult, type Tone } from '../lib/model';
 
@@ -52,32 +51,42 @@ export function PreopDetailPage(): JSX.Element {
         </div>
       )}
 
-      <div className="detail-grid">
-        <div className="card">
-          <div className="card-head">
-            <h2>Readiness call</h2>
-            <span className="meta">patient's own words</span>
-          </div>
-          {item.checks.length === 0 ? (
-            <div className="muted-block">This patient has not been called yet.</div>
-          ) : (
-            <div className="checks">
-              {item.checks.map((check) => (
-                <div className="check" key={check.id}>
-                  <span className="label">{CHECK_LABEL[check.id]}</span>
-                  <span className="said">“{check.utterance}”</span>
-                  <StatusPill tone={RESULT_TONE[check.result]} label={RESULT_LABEL[check.result]} />
-                </div>
-              ))}
-            </div>
-          )}
+      <div className="card">
+        <div className="card-head">
+          <h2>Readiness call</h2>
+          <span className="meta">patient's own words</span>
         </div>
+        {item.checks.length === 0 ? (
+          <div className="muted-block">This patient has not been called yet.</div>
+        ) : (
+          <div className="checks">
+            {item.checks.map((check) => (
+              <div className="check" key={check.id}>
+                <span className="label">{CHECK_LABEL[check.id]}</span>
+                <span className="said">“{check.utterance}”</span>
+                <StatusPill tone={RESULT_TONE[check.result]} label={RESULT_LABEL[check.result]} />
+              </div>
+            ))}
+          </div>
+        )}
 
-        <VoicePanel
-          mode={item.checks.length === 0 ? 'patient' : 'clinician'}
-          subject={item.name}
-          context={`${item.name}, ${item.procedure}${item.start ? `, scheduled ${item.start}` : ''}. Readiness: ${READINESS_LABEL[item.readiness]}.${item.barrier ? ` Barrier: ${item.barrier}` : ''}`}
-        />
+        {/* Coverage is checked, not asked. It belongs with the six spoken checks because
+            it can send a patient home from the desk just as surely as a missing driver,
+            but it is never something the patient can answer for. */}
+        {item.coverage && (
+          <div className="checks">
+            <div className="check">
+              <span className="label">Insurance coverage</span>
+              <span className="said" style={{ fontStyle: 'normal' }}>
+                {item.coverage.disposition}
+              </span>
+              <StatusPill
+                tone={item.coverage.verified ? 'good' : 'warning'}
+                label={item.coverage.verified ? 'Verified' : 'Unverified'}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

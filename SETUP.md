@@ -12,14 +12,14 @@ creating four free accounts.
 
 ## 1. Credentials
 
-Four services. Three are required; Stedi is not wired up yet.
+Four services, all wired up and required for the full demo.
 
 | Service | Where | What you create | You end up with |
 | --- | --- | --- | --- |
 | **Medplum** | [app.medplum.com](https://app.medplum.com) | Register a project, then **Project Admin → Client Applications → new** | Client **ID** and **Secret** |
 | **Deepgram** | [console.deepgram.com/signup](https://console.deepgram.com/signup) | **API Keys → create** | One API key ($200 free credits) |
 | **Moss** | [portal.usemoss.dev](https://portal.usemoss.dev) | Verify email, then **Create Index** | Project **ID** and **Key** |
-| **Stedi** *(optional)* | [stedi.com](https://www.stedi.com) | **API Keys → Generate**, type **Test** | A `test`-prefixed key |
+| **Stedi** | [stedi.com](https://www.stedi.com) | **API Keys → Generate**, type **Test** | A `test`-prefixed key |
 
 Two things people get wrong here:
 
@@ -62,6 +62,10 @@ MEDPLUM_CLIENT_SECRET=...
 
 Both `.env` files are gitignored. `server/.env.example` is not — keep real values out of
 it.
+
+Stedi is used at **seed time**: every pre-op patient gets a live 270/271 eligibility check
+and the answer becomes a readiness dimension. Without the key, coverage reads as unchecked
+and nothing else changes.
 
 > The app authenticates itself with the client secret so there is no login screen. That
 > puts the secret in the browser bundle, which is fine for a local demo on synthetic data
@@ -137,6 +141,11 @@ doesn't stall while it thinks.
 
 Every clinical sentence is retrieved, never composed. The panel counts the grounded
 lookups underneath the transcript.
+
+**Coverage.** Open **Dorothy Klein**. She answers all six questions correctly and is still
+flagged, because her payer came back "Subscriber/Insured Not Found" — the one barrier a
+conversation can never surface. Compare with any *Ready* patient, whose card shows the
+payer's real numbers: plan, deductible remaining, copay, coinsurance.
 
 If the room is loud or the microphone misbehaves, the text box under the transcript
 injects into the same conversation.

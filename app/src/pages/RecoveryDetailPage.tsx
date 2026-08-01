@@ -5,7 +5,6 @@ import { FootMap } from '../components/FootMap';
 import { IconGauge, IconLayers, IconTarget, IconWalk } from '../components/icons';
 import { StatusPill } from '../components/StatusPill';
 import { TrendChart } from '../components/TrendChart';
-import { VoicePanel } from '../components/VoicePanel';
 import { useBoard } from '../lib/fhir';
 import { RECOVERY_LABEL, RECOVERY_TONE } from '../lib/model';
 
@@ -99,45 +98,37 @@ export function RecoveryDetailPage(): JSX.Element {
         </div>
       </div>
 
-      <div className="detail-grid">
-        <div className="stack">
-          <div className="card">
-            <div className="card-head">
-              <h2>24-hour report</h2>
-              <span className="meta">{item.issued ? new Date(item.issued).toLocaleString() : ''}</span>
-            </div>
-            <div className="card-body">
-              <p className="conclusion" style={{ margin: 0 }}>
-                {item.conclusion}
-              </p>
-            </div>
+      <div className="detail-cols">
+        <div className="card">
+          <div className="card-head">
+            <h2>24-hour report</h2>
+            <span className="meta">{item.issued ? new Date(item.issued).toLocaleString() : ''}</span>
           </div>
-
-          <div className="card">
-            <div className="card-head">
-              <h2>Plantar pressure — {item.side}</h2>
-              <span className="meta">peak per zone vs protocol band</span>
-            </div>
-            <div className="card-body">
-              <FootMap zones={item.zones} side={item.side} />
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-head">
-              <h2>Asymmetry trend</h2>
-            </div>
-            <div className="card-body">
-              <TrendChart history={item.history} />
-            </div>
+          <div className="card-body">
+            <p className="conclusion" style={{ margin: 0 }}>
+              {item.conclusion}
+            </p>
           </div>
         </div>
 
-        <VoicePanel
-          mode="clinician"
-          subject={item.name}
-          context={`${item.name}, ${item.procedure}, ${item.side}, post-op day ${item.postOpDay}. ${item.conclusion}`}
-        />
+        <div className="card">
+          <div className="card-head">
+            <h2>Plantar pressure — {item.side}</h2>
+            <span className="meta">peak per zone vs protocol band</span>
+          </div>
+          <div className="card-body">
+            <FootMap zones={item.zones} side={item.side} />
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-head">
+            <h2>Asymmetry trend</h2>
+          </div>
+          <div className="card-body">
+            <TrendChart history={item.history} />
+          </div>
+        </div>
       </div>
     </div>
   );

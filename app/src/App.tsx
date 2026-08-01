@@ -2,6 +2,7 @@ import { useMedplumProfile } from '@medplum/react';
 import { useCallback, useEffect, useState, type JSX } from 'react';
 import { NavLink, Outlet } from 'react-router';
 import { IconBoard, IconClipboard, IconMoon, IconPulse, IconSun } from './components/icons';
+import { VoiceDock } from './components/VoiceDock';
 import { invalidateBoard, useBoard } from './lib/fhir';
 import { connect, getAuthError } from './lib/session';
 
@@ -160,6 +161,8 @@ export function App(): JSX.Element {
       <main className="main">
         <Outlet />
       </main>
+
+      <VoiceDock />
     </div>
   );
 }

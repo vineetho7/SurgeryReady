@@ -34,6 +34,10 @@ covers six things: when to arrive, when to stop eating and drinking, who is driv
 home, which medicines to hold, whether they have any new symptoms, and — the important one
 — it asks them to explain the instructions *back in their own words*.
 
+A seventh check happens without the patient: the system asks their insurer, in real time,
+whether the coverage is actually active. Nobody can answer that question by phone, and a
+case with unverified coverage gets pulled at the desk just as surely as one with no driver.
+
 That last step is the whole idea. It is called teach-back, and it is what a good nurse
 does. You cannot fake it with a checkbox. When Maria says *"I was planning to have coffee
 with a little milk in the morning"*, that is a cancelled colonoscopy revealing itself the
@@ -257,9 +261,13 @@ run through a contrast and colour-vision-deficiency validator in both light and 
   hallucinate clinical codes, and a made-up SNOMED code is worse than an honestly-scoped
   local one.
 - **All patients are synthetic.** No real PHI at any point.
-- **Insurance eligibility is not wired up.** Coverage that was never verified is a genuine
-  cause of same-day cancellation and belongs as a fourth readiness dimension. It is
-  designed for and not built.
+- **Eligibility runs against Stedi's sandbox, which has one fixture member.** The HTTP
+  call, the parsing, and the benefit amounts are real, but test mode recognises exactly one
+  subscriber per payer — Aetna answers only to member `AETNA12345` named Jane Doe and
+  rejects any other name against that id. So patients with verified coverage are checked
+  under that fixture identity. In production this is simply the patient's own member id.
+  The unverified case is genuinely unverified: a real payer call returning
+  "Subscriber/Insured Not Found".
 - **The demo authenticates with a client secret in the browser** so there is no login
   screen. Acceptable for a local demo on synthetic data; a real deployment keeps that
   credential server-side and signs the clinician in as a user.

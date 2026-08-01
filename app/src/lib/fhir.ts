@@ -35,6 +35,8 @@ export interface PreopCase {
   procedure: string;
   start?: string;
   readiness: Readiness;
+  /** What the payer said when asked, from the stored CoverageEligibilityResponse. */
+  coverage?: { verified: boolean; disposition: string; insurer?: string };
   checks: PreopCheck[];
   barrier?: string;
 }
@@ -106,7 +108,7 @@ function recoveryStateOf(report: DiagnosticReport): RecoveryState {
 // ── The load ──────────────────────────────────────────────────────────
 
 async function loadBoard(medplum: ReturnType<typeof useMedplum>): Promise<Board> {
-  const [patients, appointments, responses, tasks, reports, observations, procedures] = await Promise.all([
+  const [patients, appointments, responses, tasks, reports, observations, procedures, eligibility] = await Promise.all([
     medplum.searchResources('Patient', '_count=200'),
     medplum.searchResources('Appointment', '_count=200'),
     medplum.searchResources('QuestionnaireResponse', '_count=200'),
@@ -114,6 +116,7 @@ async function loadBoard(medplum: ReturnType<typeof useMedplum>): Promise<Board>
     medplum.searchResources('DiagnosticReport', '_count=400&_sort=-issued'),
     medplum.searchResources('Observation', '_count=400'),
     medplum.searchResources('Procedure', '_count=200'),
+    medplum.searchResources('CoverageEligibilityResponse', '_count=200'),
   ]);
 
   const byId = new Map(patients.map((p) => [`Patient/${p.id}`, p]));
@@ -130,6 +133,7 @@ async function loadBoard(medplum: ReturnType<typeof useMedplum>): Promise<Board>
     const task = tasks.find(
       (t) => t.for?.reference === ref && t.code?.coding?.[0]?.system === SYSTEM.barrier && t.code.coding[0].code !== 'recovery-off-track'
     );
+    const benefits = eligibility.find((e) => e.patient?.reference === ref);
     preop.push({
       patientId: ref.split('/')[1],
       name: displayName(patient),
@@ -138,6 +142,13 @@ async function loadBoard(medplum: ReturnType<typeof useMedplum>): Promise<Board>
       readiness: (response ? (tagValue(response, SYSTEM.readiness) as Readiness) : 'unknown') ?? 'unknown',
       checks: response ? parseChecks(response) : [],
       barrier: task?.description,
+      coverage: benefits
+        ? {
+            verified: benefits.outcome === 'complete',
+            disposition: benefits.disposition ?? '',
+            insurer: benefits.insurer?.display,
+          }
+        : undefined,
     });
   }
   preop.sort((a, b) => (a.start ?? '').localeCompare(b.start ?? ''));

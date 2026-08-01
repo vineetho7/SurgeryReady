@@ -6,7 +6,8 @@
   "scripts": {
     "seed": "tsx src/seed.ts",
     "verify": "tsx src/verify.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prune": "tsx src/prune.ts"
   },
   "dependencies": {
     "@medplum/core": "5.1.27",
