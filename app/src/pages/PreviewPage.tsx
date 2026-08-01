@@ -1,40 +1,21 @@
 import type { JSX } from 'react';
-import { FootMap } from '../components/FootMap';
-import { IconGauge, IconLayers, IconTarget, IconWalk } from '../components/icons';
 import { PlantarPressure } from '../components/PlantarPressure';
 import { StatusPill } from '../components/StatusPill';
 import { TrendChart } from '../components/TrendChart';
-import type { RecoveryDay, ZoneReading } from '../lib/fhir';
+import { useBoard } from '../lib/fhir';
 import type { Tone } from '../lib/model';
 
 /**
- * Unauthenticated visual harness.
+ * Visual harness.
  *
- * Renders every visual component against fixed data so the layout, colors, and dark
- * mode can be checked without a Medplum session. Not linked from the app — reachable
- * at /preview only.
+ * Renders every visual component so the layout, colors, and dark mode can be checked
+ * in one place. Not linked from the app — reachable at /preview only.
+ *
+ * The board rows below are fixtures, but the asymmetry trend is the real thing: it
+ * reads the `recovery-report-24h` DiagnosticReports and their Observations out of
+ * Medplum, same load as the recovery detail page, so the chart shown here is the chart
+ * the project's data actually produces.
  */
-
-const ZONES: ZoneReading[] = [
-  { zone: 'hallux', peakKpa: 96, bandLow: 140, bandHigh: 224, deviationSeconds: 620, contralateralKpa: 288 },
-  { zone: 'metatarsal1', peakKpa: 158, bandLow: 130, bandHigh: 208, deviationSeconds: 180, contralateralKpa: 262 },
-  { zone: 'metatarsal5', peakKpa: 196, bandLow: 100, bandHigh: 160, deviationSeconds: 940, contralateralKpa: 204 },
-  { zone: 'midfoot', peakKpa: 72, bandLow: 55, bandHigh: 88, deviationSeconds: 90, contralateralKpa: 112 },
-  { zone: 'heel', peakKpa: 342, bandLow: 150, bandHigh: 240, deviationSeconds: 1180, contralateralKpa: 304 },
-];
-
-const HISTORY: RecoveryDay[] = [
-  { postOpDay: 0, date: '', asymmetry: 0.72, expectedAsymmetry: 0.75, loadIndex: 0.4, state: 'on-track' },
-  { postOpDay: 1, date: '', asymmetry: 0.68, expectedAsymmetry: 0.75, loadIndex: 0.45, state: 'on-track' },
-  { postOpDay: 2, date: '', asymmetry: 0.63, expectedAsymmetry: 0.75, loadIndex: 0.5, state: 'on-track' },
-  { postOpDay: 3, date: '', asymmetry: 0.58, expectedAsymmetry: 0.55, loadIndex: 0.52, state: 'watch' },
-  { postOpDay: 4, date: '', asymmetry: 0.54, expectedAsymmetry: 0.55, loadIndex: 0.55, state: 'on-track' },
-  { postOpDay: 5, date: '', asymmetry: 0.49, expectedAsymmetry: 0.55, loadIndex: 0.6, state: 'on-track' },
-  { postOpDay: 6, date: '', asymmetry: 0.47, expectedAsymmetry: 0.55, loadIndex: 0.62, state: 'on-track' },
-  { postOpDay: 7, date: '', asymmetry: 0.44, expectedAsymmetry: 0.55, loadIndex: 0.64, state: 'on-track' },
-  { postOpDay: 8, date: '', asymmetry: 0.39, expectedAsymmetry: 0.35, loadIndex: 0.66, state: 'watch' },
-  { postOpDay: 9, date: '', asymmetry: 0.31, expectedAsymmetry: 0.35, loadIndex: 0.7, state: 'on-track' },
-];
 
 interface PreviewRow {
   when: string;
@@ -66,53 +47,22 @@ function Chevron(): JSX.Element {
 }
 
 export function PreviewPage(): JSX.Element {
+  const { board, loading, error } = useBoard();
+
+  /*
+   * Whichever patient has an actual series. The board is sorted worst-first, so this is
+   * the off-track case when there is one — the trend worth looking at.
+   */
+  const trend = board?.recovery.find((c) => c.history.length > 1) ?? board?.recovery[0];
+
   return (
     <div className="main fade-in" style={{ margin: '0 auto' }}>
       <div className="page-head">
         <div>
           <h1>Visual preview</h1>
-          <p className="subtitle">Every component against fixed data. No authentication.</p>
+          <p className="subtitle">Every component in one place. Asymmetry trend is live from Medplum.</p>
         </div>
         <StatusPill tone="critical" label="Off track" />
-      </div>
-
-      <div className="stats">
-        <div className="stat">
-          <div className="k">
-            <span className="ico"><IconGauge size={15} /></span>
-            Load asymmetry
-          </div>
-          <div className="v">31%</div>
-          <div className="sub">
-            <span className="up">8 pts better than yesterday</span>
-          </div>
-        </div>
-        <div className="stat">
-          <div className="k">
-            <span className="ico"><IconTarget size={15} /></span>
-            Expected today
-          </div>
-          <div className="v">35%</div>
-          <div className="sub">by the weight-bearing protocol</div>
-        </div>
-        <div className="stat">
-          <div className="k">
-            <span className="ico"><IconWalk size={15} /></span>
-            Walking captured
-          </div>
-          <div className="v">
-            38<span className="unit">min</span>
-          </div>
-          <div className="sub">stance time in last 24h</div>
-        </div>
-        <div className="stat">
-          <div className="k">
-            <span className="ico"><IconLayers size={15} /></span>
-            Sessions
-          </div>
-          <div className="v">10</div>
-          <div className="sub">days of insole data</div>
-        </div>
       </div>
 
       <section className="section">
@@ -154,24 +104,25 @@ export function PreviewPage(): JSX.Element {
             </div>
           </div>
 
-          <div className="card">
-            <div className="card-head">
-              <h2>Plantar pressure — right foot</h2>
-              <span className="meta">peak per zone vs protocol band</span>
-            </div>
-            <div className="card-body">
-              <FootMap zones={ZONES} side="right foot" />
-            </div>
-          </div>
-
           <PlantarPressure />
 
           <div className="card">
             <div className="card-head">
               <h2>Asymmetry trend</h2>
+              <span className="meta">
+                {trend ? `${trend.name} · ${trend.history.length} days from Medplum` : 'from Medplum'}
+              </span>
             </div>
             <div className="card-body">
-              <TrendChart history={HISTORY} />
+              {loading ? (
+                <div className="muted-block">Loading reports from Medplum…</div>
+              ) : error ? (
+                <div className="muted-block">Medplum: {error.message}</div>
+              ) : trend ? (
+                <TrendChart history={trend.history} />
+              ) : (
+                <div className="muted-block">No recovery-report-24h reports in this project.</div>
+              )}
             </div>
           </div>
         </div>
