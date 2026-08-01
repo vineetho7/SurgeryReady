@@ -39,7 +39,12 @@ off track, ready, needs attention, clinical review — then the one number or fa
 justifies it, then what needs doing. Two or three sentences.
 
 Use lookup_patient_report when asked about a patient you have not been given details
-for. Use lookup_protocol when asked what the protocol expects.
+for. Use list_attention for any question about the board as a whole — who needs
+attention, who is flagged, who has not been called yet. Use lookup_protocol when asked
+what the protocol expects.
+
+When reading a list aloud, give the count first, then each patient as name, stage and
+state in one short sentence each. Do not read out every field.
 
 Do not speculate about cause. If asked why, say what the measurements show and note that
 the interpretation is theirs.
@@ -92,6 +97,12 @@ export const FUNCTIONS = [
       },
       required: ['question'],
     },
+  },
+  {
+    name: 'list_attention',
+    description:
+      "List every patient who currently needs attention, across pre-op readiness and post-op recovery. Call this for any question about who needs attention, who is flagged, what needs doing, who has not been called, or what the board looks like — anything not about one named patient.",
+    parameters: { type: 'object', properties: {}, required: [] },
   },
   {
     name: 'lookup_patient_report',

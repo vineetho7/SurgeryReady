@@ -2,7 +2,7 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { AUDIO, CONFIG, DEEPGRAM_AGENT_URL } from './config.js';
 import { initKnowledge, lookupProtocol } from './knowledge.js';
 import { FUNCTIONS, greetingFor, promptFor, type VoiceMode } from './prompts.js';
-import { initRecord, latestReportFor } from './record.js';
+import { initRecord, latestReportFor, listAttention } from './record.js';
 
 /**
  * Voice agent bridge.
@@ -60,6 +60,12 @@ async function runFunction(name: string, args: Record<string, unknown>): Promise
       severity: grounding.severity,
       rule: grounding.rule,
     });
+  }
+
+  if (name === 'list_attention') {
+    const entries = await listAttention();
+    console.log(`  medplum: ${entries.length} patients needing attention`);
+    return JSON.stringify({ count: entries.length, patients: entries });
   }
 
   if (name === 'lookup_patient_report') {

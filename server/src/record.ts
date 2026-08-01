@@ -25,6 +25,97 @@ export async function initRecord(): Promise<void> {
   console.log('Medplum client authenticated.');
 }
 
+export interface BoardEntry {
+  name: string;
+  stage: 'pre-op' | 'recovery';
+  state: string;
+  detail: string;
+}
+
+/**
+ * Who needs attention right now, across both stages.
+ *
+ * "Which patients need me?" is the first thing a clinician asks, and answering it from a
+ * single-patient lookup is impossible. Reads the stored verdicts — the readiness tag on
+ * each QuestionnaireResponse and the conclusionCode on each recovery report — so the
+ * agent reports the same states the board shows rather than forming its own view.
+ */
+export async function listAttention(): Promise<BoardEntry[]> {
+  if (!authenticated) {
+    return [];
+  }
+
+  const [responses, reports, appointments, patients] = await Promise.all([
+    medplum.searchResources('QuestionnaireResponse', '_count=200'),
+    medplum.searchResources('DiagnosticReport', '_count=400&_sort=-issued'),
+    medplum.searchResources('Appointment', '_count=200'),
+    medplum.searchResources('Patient', '_count=200'),
+  ]);
+
+  const nameOf = new Map(
+    patients.map((p) => [
+      `Patient/${p.id}`,
+      `${p.name?.[0]?.given?.join(' ') ?? ''} ${p.name?.[0]?.family ?? ''}`.trim(),
+    ])
+  );
+
+  const entries: BoardEntry[] = [];
+
+  for (const response of responses) {
+    const ref = response.subject?.reference;
+    const tag = response.meta?.tag?.find((t) => t.system === 'http://surgeryready.local/readiness');
+    if (!ref || !tag?.code || tag.code === 'ready') {
+      continue;
+    }
+    entries.push({
+      name: nameOf.get(ref) ?? 'Unknown',
+      stage: 'pre-op',
+      state: tag.display ?? tag.code,
+      detail: appointments.find((a) =>
+        a.participant?.some((p) => p.actor?.reference === ref)
+      )?.description ?? '',
+    });
+  }
+
+  // Scheduled but never called — invisible to the readiness tags, and exactly the gap a
+  // coordinator needs to know about.
+  for (const appointment of appointments) {
+    const ref = appointment.participant?.find((p) => p.actor?.reference?.startsWith('Patient/'))?.actor?.reference;
+    if (!ref || responses.some((r) => r.subject?.reference === ref)) {
+      continue;
+    }
+    entries.push({
+      name: nameOf.get(ref) ?? 'Unknown',
+      stage: 'pre-op',
+      state: 'Not yet called',
+      detail: appointment.description ?? '',
+    });
+  }
+
+  const seen = new Set<string>();
+  for (const report of reports) {
+    const ref = report.subject?.reference;
+    if (!ref || seen.has(ref) || report.code?.coding?.[0]?.code !== 'recovery-report-24h') {
+      continue;
+    }
+    seen.add(ref); // reports are newest-first, so the first per patient is the current one
+    const coding = report.conclusionCode?.[0]?.coding?.find(
+      (c) => c.system === 'http://surgeryready.local/recovery-state'
+    );
+    if (!coding?.code || coding.code === 'on-track') {
+      continue;
+    }
+    entries.push({
+      name: nameOf.get(ref) ?? 'Unknown',
+      stage: 'recovery',
+      state: coding.display ?? coding.code,
+      detail: report.conclusion?.split('.').slice(0, 2).join('.') ?? '',
+    });
+  }
+
+  return entries;
+}
+
 export interface PatientSummary {
   name: string;
   conclusion: string;
