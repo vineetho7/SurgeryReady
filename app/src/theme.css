@@ -1201,12 +1201,21 @@ table.data td.num {
   background: #fff;
 }
 
+/* Non-modal on desktop: the drawer sits beside the page so the patient the agent opens
+   stays fully visible. On smaller screens it becomes a dismissable sheet with a scrim. */
 .voice-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  background: rgba(9, 13, 19, 0.38);
-  animation: fade-in 200ms ease both;
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .voice-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(9, 13, 19, 0.38);
+    animation: fade-in 200ms ease both;
+  }
 }
 
 .voice-drawer {

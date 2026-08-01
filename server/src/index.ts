@@ -175,7 +175,9 @@ function handleSession(client: WebSocket): void {
           for (const call of parseFunctionCalls(event as Record<string, any>)) {
             const content = await runFunction(call.name, call.args);
             upstream?.send(JSON.stringify({ type: 'FunctionCallResponse', id: call.id, name: call.name, content }));
-            send({ type: 'tool', name: call.name });
+            // Relay the args too: the dashboard uses lookup_patient_report to open the
+            // patient the agent was asked about, so the UI follows the conversation.
+            send({ type: 'tool', name: call.name, args: call.args });
           }
           break;
         }

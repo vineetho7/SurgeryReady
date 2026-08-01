@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'react';
-import { useLocation } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { Microphone, Speaker } from '../lib/audio';
-import { useBoard } from '../lib/fhir';
+import { useBoard, type Board } from '../lib/fhir';
 import { READINESS_LABEL } from '../lib/model';
 
 /**
@@ -10,8 +10,9 @@ import { READINESS_LABEL } from '../lib/model';
  * Mounted once at the shell, so the agent is reachable from every page and a call keeps
  * running as the clinician navigates. It is context-aware: on a patient page it scopes to
  * that patient; anywhere else it opens as a board-wide concierge that looks up any patient
- * by name. Audio and tool-calling stay server-side — the Deepgram key never reaches the
- * browser and clinical sentences come from the protocol index, not the model.
+ * by name. When the agent looks a patient up, the dashboard opens that patient's page — the
+ * UI follows the conversation. Audio and tool-calling stay server-side — the Deepgram key
+ * never reaches the browser and clinical sentences come from the protocol index.
  */
 
 export type VoiceMode = 'clinician' | 'patient';
@@ -52,44 +53,56 @@ const BOARD_SCOPE: Scope = {
 };
 
 /** Derive who the agent is talking about from the current route and the loaded board. */
-function useScope(): Scope {
-  const location = useLocation();
-  const { board } = useBoard();
-
-  return useMemo(() => {
-    const recovery = /^\/recovery\/(.+)$/.exec(location.pathname);
-    if (recovery && board) {
-      const item = board.recovery.find((c) => c.patientId === recovery[1]);
-      if (item) {
-        return {
-          mode: 'clinician',
-          subject: item.name,
-          context: `${item.name}, ${item.procedure}, ${item.side}, post-op day ${item.postOpDay}. ${item.conclusion}`,
-          label: item.name,
-          detail: `${item.procedure} · post-op day ${item.postOpDay}`,
-        };
-      }
+function deriveScope(pathname: string, board: Board | undefined): Scope {
+  const recovery = /^\/recovery\/(.+)$/.exec(pathname);
+  if (recovery && board) {
+    const item = board.recovery.find((c) => c.patientId === recovery[1]);
+    if (item) {
+      return {
+        mode: 'clinician',
+        subject: item.name,
+        context: `${item.name}, ${item.procedure}, ${item.side}, post-op day ${item.postOpDay}. ${item.conclusion}`,
+        label: item.name,
+        detail: `${item.procedure} · post-op day ${item.postOpDay}`,
+      };
     }
+  }
 
-    const preop = /^\/preop\/(.+)$/.exec(location.pathname);
-    if (preop && board) {
-      const item = board.preop.find((c) => c.patientId === preop[1]);
-      if (item) {
-        const uncalled = item.checks.length === 0;
-        return {
-          mode: uncalled ? 'patient' : 'clinician',
-          subject: item.name,
-          context: `${item.name}, ${item.procedure}. Readiness: ${READINESS_LABEL[item.readiness]}.${
-            item.barrier ? ` Barrier: ${item.barrier}` : ''
-          }`,
-          label: item.name,
-          detail: uncalled ? `${item.procedure} · readiness call` : `${item.procedure} · ${READINESS_LABEL[item.readiness]}`,
-        };
-      }
+  const preop = /^\/preop\/(.+)$/.exec(pathname);
+  if (preop && board) {
+    const item = board.preop.find((c) => c.patientId === preop[1]);
+    if (item) {
+      const uncalled = item.checks.length === 0;
+      return {
+        mode: uncalled ? 'patient' : 'clinician',
+        subject: item.name,
+        context: `${item.name}, ${item.procedure}. Readiness: ${READINESS_LABEL[item.readiness]}.${
+          item.barrier ? ` Barrier: ${item.barrier}` : ''
+        }`,
+        label: item.name,
+        detail: uncalled ? `${item.procedure} · readiness call` : `${item.procedure} · ${READINESS_LABEL[item.readiness]}`,
+      };
     }
+  }
 
-    return BOARD_SCOPE;
-  }, [location.pathname, board]);
+  return BOARD_SCOPE;
+}
+
+/** Best-effort match of a spoken/looked-up name to a patient on the board → their detail route. */
+function matchPatient(query: string, board: Board): string | undefined {
+  const q = query.trim().toLowerCase();
+  if (!q) {
+    return undefined;
+  }
+  const candidates = [
+    ...board.recovery.map((c) => ({ name: c.name.toLowerCase(), path: `/recovery/${c.patientId}` })),
+    ...board.preop.map((c) => ({ name: c.name.toLowerCase(), path: `/preop/${c.patientId}` })),
+  ];
+  const hit =
+    candidates.find((c) => c.name === q) ||
+    candidates.find((c) => c.name.includes(q) || q.includes(c.name)) ||
+    candidates.find((c) => c.name.split(/\s+/).some((part) => part.length > 2 && q.includes(part)));
+  return hit?.path;
 }
 
 function MicIcon(): JSX.Element {
@@ -118,7 +131,10 @@ function CloseIcon(): JSX.Element {
 }
 
 export function VoiceDock(): JSX.Element {
-  const scope = useScope();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { board } = useBoard();
+  const scope = useMemo(() => deriveScope(location.pathname, board), [location.pathname, board]);
 
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<VoiceMode>(scope.mode);
@@ -133,6 +149,11 @@ export function VoiceDock(): JSX.Element {
   const micRef = useRef<Microphone>(null);
   const speakerRef = useRef<Speaker>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  /** Latest board, read inside the socket handler without re-opening the connection. */
+  const boardRef = useRef(board);
+  useEffect(() => {
+    boardRef.current = board;
+  }, [board]);
 
   const live = status === 'live' || status === 'connecting' || status === 'denied';
 
@@ -170,6 +191,21 @@ export function VoiceDock(): JSX.Element {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, live]);
+
+  /** The UI follows the conversation: open whoever the agent just looked up. */
+  const focusPatient = useCallback(
+    (query: string) => {
+      const current = boardRef.current;
+      if (!current) {
+        return;
+      }
+      const path = matchPatient(query, current);
+      if (path) {
+        navigate(path);
+      }
+    },
+    [navigate]
+  );
 
   const start = useCallback(async () => {
     setStatus('connecting');
@@ -209,6 +245,10 @@ export function VoiceDock(): JSX.Element {
           break;
         case 'tool':
           setToolCount((n) => n + 1);
+          // When the agent looks a patient up, bring their page to the front.
+          if (message.name === 'lookup_patient_report') {
+            focusPatient(String(message.args?.patient_name ?? ''));
+          }
           break;
         case 'interrupt':
           speaker.clear();
@@ -226,7 +266,7 @@ export function VoiceDock(): JSX.Element {
       micRef.current?.stop();
       setStatus((current) => (current === 'connecting' ? 'offline' : 'idle'));
     };
-  }, [mode, scope]);
+  }, [mode, scope, focusPatient]);
 
   const stop = useCallback(() => {
     teardown();
@@ -350,7 +390,7 @@ export function VoiceDock(): JSX.Element {
             <div className="hint-box">
               {mode === 'clinician'
                 ? shown === BOARD_SCOPE
-                  ? 'Ask about any patient on the board out loud — the agent looks them up and answers from the record.'
+                  ? 'Ask about any patient on the board out loud — the agent looks them up, answers from the record, and opens their page.'
                   : 'Ask about this patient out loud. The agent answers from the record and quotes protocol verbatim.'
                 : 'The agent reads the report back in plain language and asks whether it matches how the patient feels.'}
             </div>
