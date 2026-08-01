@@ -174,7 +174,7 @@ export function LandingPage(): JSX.Element {
       <main id="top">
         <section className="landing-hero landing-wrap">
           <div className="hero-copy">
-            <div className="eyebrow"><span /> Keeping patients and clinicians continuously connected</div>
+            <div className="eyebrow"><span /> Connecting Every Stage of Care Through Data</div>
             <h1>Every Step Is Part of Recovery. <em>Make Every Step Count.</em></h1>
             <p>CareOrbit turns continuous smart-insole pressure data into precise, personalized recovery feedback for patients and actionable insights for care teams.</p>
             <div className="hero-actions"><LandingButton>Open Dashboard</LandingButton><LandingButton secondary>See How It Works</LandingButton></div>
@@ -243,7 +243,7 @@ export function LandingPage(): JSX.Element {
         <section className="final-cta"><div className="landing-wrap"><div className="cta-mark"><Mark /></div><h2>Keep Recovery on Track—<br />One Step at a Time.</h2><p>Give patients the feedback they need between appointments and give care teams the visibility they need to act earlier.</p><LandingButton>Open CareOrbit Dashboard</LandingButton></div></section>
       </main>
 
-      <footer className="landing-footer landing-wrap"><div className="landing-brand"><Mark /><span>CareOrbit</span></div><span>Keeping patients and clinicians continuously connected.</span><Link to="/dashboard">Demo dashboard →</Link></footer>
+      <footer className="landing-footer landing-wrap"><div className="landing-brand"><Mark /><span>CareOrbit</span></div><span>Connecting Every Stage of Care Through Data</span><Link to="/dashboard">Demo dashboard →</Link></footer>
     </div>
   );
 }
