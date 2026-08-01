@@ -72,7 +72,7 @@ function NotConnected(): JSX.Element {
     <div className="signin-wrap">
       <div className="signin-brand">
         <BrandMark />
-        SurgeryReady
+        CareOrbit
       </div>
       <div className="card" style={{ maxWidth: 460 }}>
         <div className="card-head">
@@ -120,12 +120,12 @@ export function App(): JSX.Element {
       <aside className="sidebar">
         <div className="brand">
           <BrandMark />
-          SurgeryReady
+          CareOrbit
         </div>
 
         <nav className="nav">
           <div className="nav-label">Perioperative</div>
-          <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
+          <NavLink to="/dashboard" end className={({ isActive }) => (isActive ? 'active' : '')}>
             <IconBoard size={18} />
             <span className="nav-text">Today's board</span>
           </NavLink>
