@@ -1,0 +1,808 @@
+/*
+ * SurgeryReady design tokens.
+ *
+ * Chart colors are the validated dataviz reference palette — categorical slots 1/2 for
+ * the two-series trend, the blue↔red diverging pair for the foot map, and the fixed
+ * status palette. Status colors always ship with an icon and a label; hue never carries
+ * meaning on its own.
+ */
+
+:root {
+  color-scheme: light;
+
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f2f2ef;
+
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+
+  --border: rgba(11, 11, 11, 0.1);
+  --border-strong: #e1e0d9;
+  --gridline: #e1e0d9;
+  --axis: #c3c2b7;
+
+  /* categorical slots — operated / contralateral */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+
+  /* diverging: under-loaded ← in band → over-loaded */
+  --diverge-low: #2a78d6;
+  --diverge-mid: #f0efec;
+  --diverge-high: #d03b3b;
+
+  /* status (fixed, never themed) */
+  --good: #0ca30c;
+  --warning: #fab219;
+  --serious: #ec835a;
+  --critical: #d03b3b;
+  --good-text: #006300;
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 2px rgba(11, 11, 11, 0.04), 0 4px 16px rgba(11, 11, 11, 0.04);
+
+  --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme='light'])) {
+    color-scheme: dark;
+
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-raised: #212120;
+    --surface-sunken: #141413;
+
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+
+    --border: rgba(255, 255, 255, 0.1);
+    --border-strong: #2c2c2a;
+    --gridline: #2c2c2a;
+    --axis: #383835;
+
+    --series-1: #3987e5;
+    --series-2: #d95926;
+
+    --diverge-low: #3987e5;
+    --diverge-mid: #383835;
+    --diverge-high: #d03b3b;
+
+    --good-text: #0ca30c;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --surface-raised: #212120;
+  --surface-sunken: #141413;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #898781;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: #2c2c2a;
+  --gridline: #2c2c2a;
+  --axis: #383835;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --diverge-low: #3987e5;
+  --diverge-mid: #383835;
+  --diverge-high: #d03b3b;
+  --good-text: #0ca30c;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ── Shell ─────────────────────────────────────────────────────────── */
+
+.shell {
+  display: grid;
+  grid-template-columns: 232px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 8px;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+  font-size: 15px;
+}
+
+.brand svg {
+  flex: none;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 0 8px 6px;
+}
+
+.nav a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-weight: 480;
+}
+
+.nav a:hover {
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+}
+
+.nav a.active {
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-weight: 560;
+}
+
+.nav .count {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.sidebar-foot {
+  margin-top: auto;
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.main {
+  padding: 26px 32px 64px;
+  max-width: 1180px;
+  width: 100%;
+}
+
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+h1 {
+  font-size: 21px;
+  font-weight: 620;
+  letter-spacing: -0.02em;
+  margin: 0 0 3px;
+}
+
+h2 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ── Cards ─────────────────────────────────────────────────────────── */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-body {
+  padding: 16px;
+}
+
+.section {
+  margin-bottom: 26px;
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+/* Secondary, not muted: muted is reserved for chart axis chrome, where it sits below
+   the 4.5:1 body-text floor on the light surface. */
+.section-head .hint {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* ── Status pill ───────────────────────────────────────────────────── */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 540;
+  white-space: nowrap;
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+}
+
+.pill svg {
+  flex: none;
+}
+
+/* ── Rows ──────────────────────────────────────────────────────────── */
+
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 62px 1fr 190px 150px auto;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row:hover {
+  background: var(--surface-sunken);
+}
+
+/* The wash matches the pill's severity — a warning row must not read as critical.
+   Severity rides the surface tint and the pill; no colored rule down the edge. */
+.row.flagged {
+  background: color-mix(in srgb, var(--critical) 6%, var(--surface));
+}
+
+.row.flagged:hover {
+  background: color-mix(in srgb, var(--critical) 11%, var(--surface));
+}
+
+.row.flagged-warn {
+  background: color-mix(in srgb, var(--warning) 5%, var(--surface));
+}
+
+.row.flagged-warn:hover {
+  background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+}
+
+.row:focus-visible,
+.nav a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--series-1);
+  outline-offset: -2px;
+}
+
+.row .when {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.row .who {
+  font-weight: 540;
+}
+
+.row .what {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.row .note {
+  color: var(--text-secondary);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chev {
+  color: var(--text-muted);
+}
+
+.muted-block {
+  padding: 14px 16px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ── Stats ─────────────────────────────────────────────────────────── */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 13px 15px;
+}
+
+.stat .k {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.stat .v {
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.stat .sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Detail layout ─────────────────────────────────────────────────── */
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .shell {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    position: static;
+    height: auto;
+  }
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.conclusion {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.reasons {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.reasons li {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+}
+
+.reasons li svg {
+  flex: none;
+  margin-top: 3px;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.back:hover {
+  color: var(--text-primary);
+}
+
+/* ── Utterance list (pre-op) ───────────────────────────────────────── */
+
+.checks {
+  display: flex;
+  flex-direction: column;
+}
+
+.check {
+  display: grid;
+  grid-template-columns: 148px 1fr auto;
+  gap: 14px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  align-items: start;
+}
+
+.check:last-child {
+  border-bottom: none;
+}
+
+.check .label {
+  font-weight: 540;
+  font-size: 13.5px;
+}
+
+.check .said {
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 13.5px;
+}
+
+/* ── Charts ────────────────────────────────────────────────────────── */
+
+.legend {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.legend .item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.scale {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.scale-bar {
+  height: 8px;
+  width: 130px;
+  border-radius: 4px;
+  background: linear-gradient(to right, var(--diverge-low), var(--diverge-mid), var(--diverge-high));
+  border: 1px solid var(--border);
+}
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+table.data th,
+table.data td {
+  text-align: left;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+table.data th {
+  color: var(--text-muted);
+  font-weight: 520;
+  font-size: 12px;
+}
+
+table.data td.num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ── Voice panel ───────────────────────────────────────────────────── */
+
+.voice {
+  position: sticky;
+  top: 26px;
+}
+
+.mic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: var(--text-primary);
+  color: var(--page);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 560;
+  cursor: pointer;
+}
+
+.mic:hover {
+  opacity: 0.9;
+}
+
+.mic[data-live='true'] {
+  background: var(--critical);
+  color: #fff;
+}
+
+.mic:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mode-switch {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+}
+
+.mode-switch button {
+  flex: 1;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.mode-switch button[aria-pressed='true'] {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font-weight: 560;
+  box-shadow: var(--shadow);
+}
+
+.transcript {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.turn {
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.turn .speaker {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.turn.agent .body {
+  color: var(--text-primary);
+}
+
+.turn.patient .body {
+  color: var(--text-secondary);
+}
+
+.hint-box {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.hint-box code {
+  font-size: 12px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+/* ── Voice status ──────────────────────────────────────────────────── */
+
+.voice-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.voice-status.is-live {
+  color: var(--text-primary);
+}
+
+.pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--critical);
+  animation: pulse 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--critical) 55%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+  }
+}
+
+.typed {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.typed input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.typed input::placeholder {
+  color: var(--text-secondary);
+}
+
+.typed button {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 540;
+  cursor: pointer;
+}
+
+.typed button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.grounded {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--good-text);
+}
+
+/* ── Sign in ───────────────────────────────────────────────────────── */
+
+.signin-wrap {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+}
+
+.signin-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 19px;
+  font-weight: 620;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+/* Lives inside the Mantine card, which owns its own surface — inherit its ink,
+   not the page tokens, or the text disappears in one of the two themes. */
+.signin-tagline {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  color: inherit;
+  opacity: 0.65;
+}

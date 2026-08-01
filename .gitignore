@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.turbo/
+*.log
+
+# secrets
+.env
+.env.local
+*.local
+
+# generated bot bundles
+app/data/example/example-bots.json

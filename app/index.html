@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/src/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f766e" />
+    <title>SurgeryReady</title>
+    <!-- Default to light, restore the clinician's last choice, before first paint (no FOUC). -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('sr-theme') || 'light';
+          document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!--
+      DIRECTION CONTRACT — SurgeryReady dashboard (Operate · light premium)
+      THESIS: A calm clinical instrument that surfaces the exceptions first; depth, whitespace and
+        one confident teal carry trust, refusing the flat generic-dark-dashboard look.
+      OWN-WORLD: Cool near-white ground, layered white cards with real soft shadows, a single
+        spruce-teal accent (#0f766e), tabular KPI numerals, soft-tinted status pills that keep
+        icon+label, drawn single-weight icons. Both light and dark themes ship.
+      STORY: Clinician lands, sees who needs attention, drills into a patient, reviews grounded
+        data, and runs the voice agent.
+      FIRST VIEWPORT: Iconned sidebar + theme toggle; board header; big-number KPI cards;
+        exception-sorted patient rows with avatars and tinted status.
+      FORM: Operate dashboard, light premium.
+      FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+    -->
+    <div id="root"></div>
+    <script src="https://accounts.google.com/gsi/client" async></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

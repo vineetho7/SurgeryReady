@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+const [,, scheme='dark'] = process.argv;
+const b = await chromium.launch();
+const p = await b.newPage({ viewport:{width:1440,height:1000}, colorScheme: scheme, deviceScaleFactor:2 });
+const errors=[]; p.on('pageerror',e=>errors.push(e.message)); p.on('console',m=>m.type()==='error'&&errors.push(m.text()));
+await p.goto('http://localhost:3000/', {waitUntil:'networkidle'});
+await p.getByText('Rosa Iqbal').click();
+await p.waitForTimeout(2500);
+await p.screenshot({path:`/tmp/recovery-${scheme}.png`, fullPage:true});
+console.log('url:', p.url());
+console.log('errors:', errors.length); errors.slice(0,6).forEach(e=>console.log('  !',e));
+await b.close();
