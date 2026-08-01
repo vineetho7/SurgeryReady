@@ -85,8 +85,8 @@ export function TrendChart({ history }: { history: RecoveryDay[] }): JSX.Element
 
         <line x1={PAD.left} x2={W - PAD.right} y1={PAD.top + plotH} y2={PAD.top + plotH} stroke="var(--axis)" strokeWidth="1" />
 
-        {history.map((d) => (
-          <text key={d.postOpDay} x={x(d.postOpDay)} y={H - 26} textAnchor="middle" fontSize="11" fill="var(--text-muted)">
+        {history.map((d, i) => (
+          <text key={`lbl-${i}`} x={x(d.postOpDay)} y={H - 26} textAnchor="middle" fontSize="11" fill="var(--text-muted)">
             {d.postOpDay}
           </text>
         ))}
@@ -96,7 +96,7 @@ export function TrendChart({ history }: { history: RecoveryDay[] }): JSX.Element
 
         {history.map((d, i) => (
           <circle
-            key={d.postOpDay}
+            key={`pt-${i}`}
             cx={x(d.postOpDay)}
             cy={y(d.asymmetry)}
             r={hoverIndex === i ? 5.5 : 4}
