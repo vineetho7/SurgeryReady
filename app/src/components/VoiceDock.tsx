@@ -33,7 +33,17 @@ interface Scope {
 
 const AGENT_URL = import.meta.env.VITE_AGENT_URL ?? 'ws://localhost:8080/agent';
 
-type Status = 'idle' | 'connecting' | 'live' | 'offline' | 'denied';
+type Status = 'idle' | 'connecting' | 'live' | 'offline' | 'denied' | 'preempted';
+
+/**
+ * One live microphone per browser.
+ *
+ * Two tabs open on the dashboard each hold their own session with their own microphone.
+ * Both hear the same room, both transcribe the same sentence, both answer, and both speak
+ * — which sounds like the agent stuttering rather than like two sessions. Starting a
+ * session claims the microphone and any other tab holding one stands down.
+ */
+const VOICE_CHANNEL = 'surgeryready-voice';
 
 const STATUS_LABEL: Record<Status, string> = {
   idle: 'Ready',
@@ -41,6 +51,7 @@ const STATUS_LABEL: Record<Status, string> = {
   live: 'Listening',
   offline: 'Agent offline',
   denied: 'Microphone blocked',
+  preempted: 'Taken over elsewhere',
 };
 
 const BOARD_SCOPE: Scope = {
@@ -168,6 +179,33 @@ export function VoiceDock(): JSX.Element {
 
   useEffect(() => teardown, [teardown]);
 
+  /**
+   * Microphone claim. Held in a ref so the listener never needs re-registering, and
+   * compared by id so a tab does not stand down for its own claim.
+   */
+  const claimRef = useRef<{ channel?: BroadcastChannel; id: string }>({
+    id: `${performance.now()}-${performance.timeOrigin}`,
+  });
+
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') {
+      return;
+    }
+    const channel = new BroadcastChannel(VOICE_CHANNEL);
+    claimRef.current.channel = channel;
+    channel.onmessage = (event) => {
+      if (event.data?.type === 'claim' && event.data.id !== claimRef.current.id) {
+        // Another tab took the microphone. Drop ours rather than talk over it.
+        teardown();
+        setStatus((current) => (current === 'idle' ? current : 'preempted'));
+      }
+    };
+    return () => {
+      channel.close();
+      claimRef.current.channel = undefined;
+    };
+  }, [teardown]);
+
   // Follow the route while idle; a live call keeps the scope it began with.
   useEffect(() => {
     if (!live) {
@@ -208,6 +246,17 @@ export function VoiceDock(): JSX.Element {
   );
 
   const start = useCallback(async () => {
+    // One pipeline, ever. Two concurrent sockets mean two Deepgram agents — each with its
+    // own mic capture and its own playback — which is exactly what makes speech register
+    // twice and the agent's voice come out doubled. Bail if a session already exists, and
+    // clear any lingering mic/speaker before opening a new one.
+    if (socketRef.current) {
+      return;
+    }
+    teardown();
+    // Claim the microphone. Any other tab holding a session stands down — otherwise both
+    // hear the same room and answer it, and the agent sounds like it is stuttering.
+    claimRef.current.channel?.postMessage({ type: 'claim', id: claimRef.current.id });
     setStatus('connecting');
     setTurns([]);
     setToolCount(0);
@@ -264,9 +313,17 @@ export function VoiceDock(): JSX.Element {
     socket.onerror = () => setStatus('offline');
     socket.onclose = () => {
       micRef.current?.stop();
-      setStatus((current) => (current === 'connecting' ? 'offline' : 'idle'));
+      // Release the ref so a later Ask can open a fresh session (the start() guard checks it).
+      if (socketRef.current === socket) {
+        socketRef.current = null;
+      }
+      // 'preempted' survives: teardown closes the socket, so this fires immediately after
+      // another tab claimed the mic, and resetting to 'idle' here would erase the reason.
+      setStatus((current) =>
+        current === 'connecting' ? 'offline' : current === 'preempted' ? current : 'idle'
+      );
     };
-  }, [mode, scope, focusPatient]);
+  }, [mode, scope, focusPatient, teardown]);
 
   const stop = useCallback(() => {
     teardown();
@@ -383,6 +440,13 @@ export function VoiceDock(): JSX.Element {
           {status === 'denied' && (
             <div className="hint-box">
               The browser blocked the microphone. Allow it for this site, or type below to continue the conversation.
+            </div>
+          )}
+
+          {status === 'preempted' && (
+            <div className="hint-box">
+              Another tab started a session, so this one released the microphone. Two open at once both hear the room
+              and both answer. Press the button to take it back.
             </div>
           )}
 
