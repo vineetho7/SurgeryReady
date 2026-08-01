@@ -1,4 +1,4 @@
-import { MedplumClient } from '@medplum/core';
+import { ClientStorage, MedplumClient, MemoryStorage } from '@medplum/core';
 import type { DiagnosticReport, Patient } from '@medplum/fhirtypes';
 import { CONFIG } from './config.js';
 
@@ -11,7 +11,12 @@ import { CONFIG } from './config.js';
  * to the model's own reading of raw data.
  */
 
-const medplum = new MedplumClient({ baseUrl: CONFIG.medplum.baseUrl });
+/* Explicit storage: see the note in seed/src/client.ts — Node's localStorage global
+   throws unless --localstorage-file was passed, and MedplumClient prefers it if present. */
+const medplum = new MedplumClient({
+  baseUrl: CONFIG.medplum.baseUrl,
+  storage: new ClientStorage(new MemoryStorage()),
+});
 let authenticated = false;
 
 export async function initRecord(): Promise<void> {
