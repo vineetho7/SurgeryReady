@@ -1,0 +1,26 @@
+# Voice bridge, built from the repository root.
+#
+# server/src/knowledge.ts imports PROTOCOLS and the weight-bearing schedule from
+# seed/src, so the server cannot be built with server/ as its root — the build
+# context has to contain both packages. Duplicating those modules into server/
+# would fork zones.ts, which is the clinical model, so the build context widens
+# instead.
+#
+# Debian rather than Alpine on purpose: @moss-dev/moss-core ships linux-x64-gnu
+# and has no musl target, so an Alpine base finds no native binary.
+FROM node:22-slim
+
+WORKDIR /repo
+
+# Only what the server actually needs at runtime, so a change to app/ does not
+# invalidate this layer.
+COPY server/package.json server/package-lock.json ./server/
+# --include=dev because start runs through tsx, which is a devDependency.
+RUN cd server && npm ci --include=dev
+
+COPY server/ ./server/
+COPY seed/src/ ./seed/src/
+COPY seed/package.json seed/tsconfig.json ./seed/
+
+WORKDIR /repo/server
+CMD ["npm", "start"]
