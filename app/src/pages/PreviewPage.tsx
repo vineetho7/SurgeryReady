@@ -1,8 +1,10 @@
 import type { JSX } from 'react';
 import { FootMap } from '../components/FootMap';
+import { IconGauge, IconLayers, IconTarget, IconWalk } from '../components/icons';
 import { StatusPill } from '../components/StatusPill';
 import { TrendChart } from '../components/TrendChart';
 import type { RecoveryDay, ZoneReading } from '../lib/fhir';
+import type { Tone } from '../lib/model';
 
 /**
  * Unauthenticated visual harness.
@@ -33,16 +35,38 @@ const HISTORY: RecoveryDay[] = [
   { postOpDay: 9, date: '', asymmetry: 0.31, expectedAsymmetry: 0.35, loadIndex: 0.7, state: 'on-track' },
 ];
 
-const ROWS = [
-  { when: 'POD 4', who: 'Rosa Iqbal', what: 'Lisfranc fixation', tone: 'critical' as const, label: 'Off track', flagged: true },
-  { when: 'POD 6', who: 'Marcus Bell', what: 'Ankle ORIF', tone: 'warning' as const, label: 'Watch', flagged: false },
-  { when: 'POD 12', who: 'Ana Delgado', what: 'Hallux valgus correction', tone: 'good' as const, label: 'On track', flagged: false },
-  { when: '07:30', who: 'Maria Santos', what: 'Colonoscopy', tone: 'neutral' as const, label: 'Not yet called', flagged: false },
+interface PreviewRow {
+  when: string;
+  who: string;
+  what: string;
+  tone: Tone;
+  label: string;
+  flag: string;
+}
+
+const ROWS: PreviewRow[] = [
+  { when: 'POD 4', who: 'Rosa Iqbal', what: 'Lisfranc fixation', tone: 'critical', label: 'Off track', flag: 'flagged' },
+  { when: 'POD 6', who: 'Marcus Bell', what: 'Ankle ORIF', tone: 'warning', label: 'Watch', flag: 'flagged-warn' },
+  { when: 'POD 12', who: 'Ana Delgado', what: 'Hallux valgus correction', tone: 'good', label: 'On track', flag: '' },
+  { when: '07:30', who: 'Maria Santos', what: 'Colonoscopy', tone: 'neutral', label: 'Not yet called', flag: '' },
 ];
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '·';
+}
+
+function Chevron(): JSX.Element {
+  return (
+    <svg className="chev" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M6 3.5L10.5 8 6 12.5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 export function PreviewPage(): JSX.Element {
   return (
-    <div className="main" style={{ margin: '0 auto' }}>
+    <div className="main fade-in" style={{ margin: '0 auto' }}>
       <div className="page-head">
         <div>
           <h1>Visual preview</h1>
@@ -53,26 +77,38 @@ export function PreviewPage(): JSX.Element {
 
       <div className="stats">
         <div className="stat">
-          <div className="k">Load asymmetry</div>
+          <div className="k">
+            <span className="ico"><IconGauge size={15} /></span>
+            Load asymmetry
+          </div>
           <div className="v">31%</div>
           <div className="sub">
-            <span style={{ color: 'var(--good-text)' }}>↓ 8 pts since yesterday</span>
+            <span className="up">8 pts better than yesterday</span>
           </div>
         </div>
         <div className="stat">
-          <div className="k">Expected today</div>
+          <div className="k">
+            <span className="ico"><IconTarget size={15} /></span>
+            Expected today
+          </div>
           <div className="v">35%</div>
           <div className="sub">by the weight-bearing protocol</div>
         </div>
         <div className="stat">
-          <div className="k">Walking captured</div>
+          <div className="k">
+            <span className="ico"><IconWalk size={15} /></span>
+            Walking captured
+          </div>
           <div className="v">
-            38<span style={{ fontSize: 15, fontWeight: 500 }}> min</span>
+            38<span className="unit">min</span>
           </div>
           <div className="sub">stance time in last 24h</div>
         </div>
         <div className="stat">
-          <div className="k">Sessions</div>
+          <div className="k">
+            <span className="ico"><IconLayers size={15} /></span>
+            Sessions
+          </div>
           <div className="v">10</div>
           <div className="sub">days of insole data</div>
         </div>
@@ -86,14 +122,15 @@ export function PreviewPage(): JSX.Element {
         <div className="card">
           <div className="rows">
             {ROWS.map((row) => (
-              <div className={`row ${row.flagged ? 'flagged' : ''}`} key={row.who}>
+              <div className={`row ${row.flag}`} key={row.who}>
                 <span className="when">{row.when}</span>
-                <span className="who">{row.who}</span>
-                <span className="what">{row.what}</span>
+                <span className="avatar" aria-hidden="true">{initials(row.who)}</span>
+                <span className="who">
+                  <span className="name">{row.who}</span>
+                  <span className="proc">{row.what}</span>
+                </span>
                 <StatusPill tone={row.tone} label={row.label} />
-                <svg className="chev" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
-                  <path d="M6 3.5L10.5 8 6 12.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <Chevron />
               </div>
             ))}
           </div>
@@ -105,7 +142,7 @@ export function PreviewPage(): JSX.Element {
           <div className="card">
             <div className="card-head">
               <h2>24-hour report</h2>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>preview</span>
+              <span className="meta">preview</span>
             </div>
             <div className="card-body">
               <p className="conclusion" style={{ margin: 0 }}>
@@ -119,7 +156,7 @@ export function PreviewPage(): JSX.Element {
           <div className="card">
             <div className="card-head">
               <h2>Plantar pressure — right foot</h2>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>peak per zone vs protocol band</span>
+              <span className="meta">peak per zone vs protocol band</span>
             </div>
             <div className="card-body">
               <FootMap zones={ZONES} side="right foot" />
@@ -140,7 +177,7 @@ export function PreviewPage(): JSX.Element {
           <div className="card-head">
             <h2>Status tones</h2>
           </div>
-          <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
+          <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
             <StatusPill tone="good" label="On track" />
             <StatusPill tone="warning" label="Watch" />
             <StatusPill tone="critical" label="Off track" />

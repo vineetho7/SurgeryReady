@@ -31,7 +31,7 @@ export function PreopDetailPage(): JSX.Element {
   }
 
   return (
-    <>
+    <div className="fade-in">
       <BackLink to="/preop">Pre-op readiness</BackLink>
 
       <div className="page-head">
@@ -46,18 +46,9 @@ export function PreopDetailPage(): JSX.Element {
       </div>
 
       {item.barrier && (
-        <div
-          className="card"
-          style={{
-            marginBottom: 18,
-            // Border tracks the same severity as the pill beside it.
-            borderColor: `color-mix(in srgb, var(--${item.readiness === 'clinical-review' ? 'critical' : 'warning'}) 40%, var(--border))`,
-          }}
-        >
-          <div className="card-body" style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-            <StatusPill tone={READINESS_TONE[item.readiness]} label="Action" />
-            <p style={{ margin: 0 }}>{item.barrier}</p>
-          </div>
+        <div className="callout" data-tone={item.readiness === 'clinical-review' ? 'critical' : 'warning'}>
+          <StatusPill tone={READINESS_TONE[item.readiness]} label="Action" />
+          <p>{item.barrier}</p>
         </div>
       )}
 
@@ -65,7 +56,7 @@ export function PreopDetailPage(): JSX.Element {
         <div className="card">
           <div className="card-head">
             <h2>Readiness call</h2>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>patient's own words</span>
+            <span className="meta">patient's own words</span>
           </div>
           {item.checks.length === 0 ? (
             <div className="muted-block">This patient has not been called yet.</div>
@@ -88,6 +79,6 @@ export function PreopDetailPage(): JSX.Element {
           context={`${item.name}, ${item.procedure}${item.start ? `, scheduled ${item.start}` : ''}. Readiness: ${READINESS_LABEL[item.readiness]}.${item.barrier ? ` Barrier: ${item.barrier}` : ''}`}
         />
       </div>
-    </>
+    </div>
   );
 }
