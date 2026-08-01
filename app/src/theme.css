@@ -367,6 +367,39 @@ a {
   flex: none;
 }
 
+/* Relevant history, inline under the patient name — one line per condition. */
+.history-inline {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 74ch;
+}
+
+.history-inline li {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.history-inline .condition {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.history-inline .since {
+  font-weight: 450;
+  color: var(--text-muted);
+}
+
+/* An em dash before the bearing keeps the two halves apart without a second line. */
+.history-inline .bearing::before {
+  content: ' — ';
+  color: var(--text-muted);
+}
+
 /* The two feet, side by side, on one scale. */
 .foot-pair {
   display: flex;

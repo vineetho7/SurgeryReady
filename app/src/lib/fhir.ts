@@ -61,8 +61,14 @@ export interface RecoveryDay {
   postOpDay: number;
   date: string;
   asymmetry: number;
-  /** What the weight-bearing protocol expects on this day — same unit, so one axis. */
-  expectedAsymmetry: number;
+  /**
+   * What the weight-bearing protocol expects on this day — same unit, so one axis.
+   *
+   * Optional: the recordings pushed by the insole pipeline carry a measured asymmetry
+   * and no protocol band, and inventing a band for them would put a line on the chart
+   * that no resource in the project says.
+   */
+  expectedAsymmetry?: number;
   /** Mean operated load as a fraction of the day's band midpoint. 1.0 means dead centre. */
   loadIndex: number;
   state: RecoveryState;
@@ -107,6 +113,50 @@ function tagValue(resource: { meta?: { tag?: { system?: string; code?: string }[
 function displayName(patient?: Patient): string {
   const name = patient?.name?.[0];
   return name ? `${name.given?.join(' ') ?? ''} ${name.family ?? ''}`.trim() : 'Unknown';
+}
+
+/** A plain-valued Observation among a report's results, by code. */
+function valueOf(results: Observation[], code: string): number | undefined {
+  const obs = results.find((o) => o.code?.coding?.some((c) => c.code === code));
+  return obs?.valueQuantity?.value;
+}
+
+/**
+ * One day of the trend, whichever writer produced the report.
+ *
+ * Two pipelines write `recovery-report-24h` into this project. The seed writes a single
+ * Observation with everything in components — `asymmetry-index`, `expected-asymmetry`,
+ * `post-op-day`. The insole pipeline writes several plain Observations per report —
+ * `steps`, `asymmetry-pct`, `pain-score` — with the day only in the report's conclusion.
+ * Reading the first result and asking for components returns 0 for the second shape,
+ * which is a chart with every point stacked on the origin. Both shapes are read here.
+ */
+function recoveryDayOf(report: DiagnosticReport, results: Observation[], index: number): RecoveryDay | undefined {
+  const composite = results.find((o) => comp(o, 'asymmetry-index'));
+  if (composite) {
+    return {
+      postOpDay: num(composite, 'post-op-day'),
+      date: report.effectiveDateTime ?? '',
+      asymmetry: num(composite, 'asymmetry-index'),
+      expectedAsymmetry: num(composite, 'expected-asymmetry'),
+      loadIndex: loadIndexOf(composite),
+      state: recoveryStateOf(report),
+    };
+  }
+
+  // Percent on the wire, fraction on the axis — the chart's other series is a fraction.
+  const percent = valueOf(results, 'asymmetry-pct');
+  if (percent === undefined) {
+    return undefined;
+  }
+  const stated = /day\s+(\d+)/i.exec(report.conclusion ?? '');
+  return {
+    postOpDay: stated ? Number(stated[1]) : index + 1,
+    date: report.effectiveDateTime ?? '',
+    asymmetry: percent / 100,
+    loadIndex: 0,
+    state: recoveryStateOf(report),
+  };
 }
 
 function recoveryStateOf(report: DiagnosticReport): RecoveryState {
@@ -195,30 +245,27 @@ async function loadBoard(medplum: ReturnType<typeof useMedplum>): Promise<Board>
     const patient = byId.get(ref);
     const procedure = procedures.find((p) => p.subject?.reference === ref);
 
-    const history: RecoveryDay[] = [];
-    for (const report of ordered) {
-      const obsRef = report.result?.[0]?.reference;
-      const obs = observations.find((o) => `Observation/${o.id}` === obsRef);
-      if (!obs) {
-        continue;
-      }
-      history.push({
-        postOpDay: num(obs, 'post-op-day'),
-        date: report.effectiveDateTime ?? '',
-        asymmetry: num(obs, 'asymmetry-index'),
-        expectedAsymmetry: num(obs, 'expected-asymmetry'),
-        loadIndex: loadIndexOf(obs),
-        state: recoveryStateOf(report),
+    const resultsOf = (report: DiagnosticReport): Observation[] =>
+      (report.result ?? []).flatMap((r) => {
+        const obs = observations.find((o) => `Observation/${o.id}` === r.reference);
+        return obs ? [obs] : [];
       });
-    }
 
-    const latestObs = observations.find((o) => `Observation/${o.id}` === latest.result?.[0]?.reference);
+    const history: RecoveryDay[] = [];
+    ordered.forEach((report, index) => {
+      const day = recoveryDayOf(report, resultsOf(report), index);
+      if (day) {
+        history.push(day);
+      }
+    });
+
+    const latestObs = resultsOf(latest).find((o) => comp(o, 'asymmetry-index'));
     recovery.push({
       patientId: ref.split('/')[1],
       name: displayName(patient),
       procedure: procedure?.code?.text ?? 'Procedure',
       side: procedure?.bodySite?.[0]?.text ?? '',
-      postOpDay: latestObs ? num(latestObs, 'post-op-day') : 0,
+      postOpDay: history[history.length - 1]?.postOpDay ?? 0,
       state: recoveryStateOf(latest),
       conclusion: latest.conclusion ?? '',
       issued: latest.issued,

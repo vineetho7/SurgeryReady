@@ -23,7 +23,9 @@ export function TrendChart({ history }: { history: RecoveryDay[] }): JSX.Element
   const days = history.map((d) => d.postOpDay);
   const minDay = Math.min(...days);
   const maxDay = Math.max(...days);
-  const maxValue = Math.max(0.6, ...history.map((d) => Math.max(d.asymmetry, d.expectedAsymmetry))) * 1.12;
+  // Only some writers record the protocol band; without it this is a one-series chart.
+  const expected = history.every((d) => d.expectedAsymmetry !== undefined);
+  const maxValue = Math.max(0.6, ...history.map((d) => Math.max(d.asymmetry, d.expectedAsymmetry ?? 0))) * 1.12;
 
   const plotW = W - PAD.left - PAD.right;
   const plotH = H - PAD.top - PAD.bottom;
@@ -59,10 +61,12 @@ export function TrendChart({ history }: { history: RecoveryDay[] }): JSX.Element
           <span className="swatch" style={{ background: 'var(--series-1)' }} />
           Measured asymmetry
         </span>
-        <span className="item">
-          <span className="swatch" style={{ background: 'var(--series-2)' }} />
-          Expected for the day
-        </span>
+        {expected && (
+          <span className="item">
+            <span className="swatch" style={{ background: 'var(--series-2)' }} />
+            Expected for the day
+          </span>
+        )}
       </div>
 
       <svg
@@ -72,7 +76,9 @@ export function TrendChart({ history }: { history: RecoveryDay[] }): JSX.Element
         onMouseMove={onMove}
         onMouseLeave={() => setHoverIndex(undefined)}
         role="img"
-        aria-label="Load asymmetry against expected, by post-operative day"
+        aria-label={
+          expected ? 'Load asymmetry against expected, by post-operative day' : 'Load asymmetry by post-operative day'
+        }
       >
         {ticks.map((t) => (
           <g key={t}>
@@ -91,7 +97,9 @@ export function TrendChart({ history }: { history: RecoveryDay[] }): JSX.Element
           </text>
         ))}
 
-        <path d={line((d) => d.expectedAsymmetry)} fill="none" stroke="var(--series-2)" strokeWidth="2" strokeDasharray="5 4" />
+        {expected && (
+          <path d={line((d) => d.expectedAsymmetry ?? 0)} fill="none" stroke="var(--series-2)" strokeWidth="2" strokeDasharray="5 4" />
+        )}
         <path d={line((d) => d.asymmetry)} fill="none" stroke="var(--series-1)" strokeWidth="2" strokeLinejoin="round" />
 
         {history.map((d, i) => (
@@ -121,7 +129,9 @@ export function TrendChart({ history }: { history: RecoveryDay[] }): JSX.Element
               stroke="var(--axis)"
               strokeWidth="1"
             />
-            <circle cx={x(hovered.postOpDay)} cy={y(hovered.expectedAsymmetry)} r="4" fill="var(--series-2)" stroke="var(--surface)" strokeWidth="2" />
+            {expected && (
+              <circle cx={x(hovered.postOpDay)} cy={y(hovered.expectedAsymmetry ?? 0)} r="4" fill="var(--series-2)" stroke="var(--surface)" strokeWidth="2" />
+            )}
           </g>
         )}
 
@@ -135,7 +145,8 @@ export function TrendChart({ history }: { history: RecoveryDay[] }): JSX.Element
         {hovered ? (
           <>
             <strong style={{ color: 'var(--text-primary)' }}>Day {hovered.postOpDay}</strong> — measured{' '}
-            {Math.round(hovered.asymmetry * 100)}%, expected {Math.round(hovered.expectedAsymmetry * 100)}%
+            {Math.round(hovered.asymmetry * 100)}%
+            {hovered.expectedAsymmetry !== undefined && `, expected ${Math.round(hovered.expectedAsymmetry * 100)}%`}
           </>
         ) : (
           <span style={{ color: 'var(--text-muted)' }}>Hover the chart for a day-by-day reading.</span>

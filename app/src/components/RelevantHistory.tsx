@@ -11,9 +11,36 @@ import type { RelevantCondition } from '../lib/fhir';
  * Renders nothing when there is nothing relevant. An empty card would imply the absence of
  * history rather than the absence of anything worth flagging.
  */
-export function RelevantHistory({ conditions }: { conditions: RelevantCondition[] }): JSX.Element | null {
+export function RelevantHistory({
+  conditions,
+  inline = false,
+}: {
+  conditions: RelevantCondition[];
+  inline?: boolean;
+}): JSX.Element | null {
   if (conditions.length === 0) {
     return null;
+  }
+
+  /*
+   * Inline: the same sentences directly under the patient's name, where they are read as
+   * part of who this patient is rather than as a card competing with the measurements.
+   * Costs one line per condition instead of a full card.
+   */
+  if (inline) {
+    return (
+      <ul className="history-inline">
+        {conditions.map((item) => (
+          <li key={item.condition}>
+            <span className="condition">
+              {item.condition}
+              {item.since && <span className="since"> since {item.since}</span>}
+            </span>
+            {item.bearing && <span className="bearing">{item.bearing}</span>}
+          </li>
+        ))}
+      </ul>
+    );
   }
 
   return (

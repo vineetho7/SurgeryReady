@@ -30,6 +30,7 @@ export function RecoveryDetailPage(): JSX.Element {
           <p className="subtitle">
             {item.procedure} · {item.side} · post-op day {item.postOpDay}
           </p>
+          <RelevantHistory conditions={item.conditions} inline />
         </div>
         <StatusPill tone={RECOVERY_TONE[item.state]} label={RECOVERY_LABEL[item.state]} />
       </div>
@@ -46,8 +47,6 @@ export function RecoveryDetailPage(): JSX.Element {
             </p>
           </div>
         </div>
-
-        <RelevantHistory conditions={item.conditions} />
 
         <PlantarPressure />
 
