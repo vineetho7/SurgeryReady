@@ -9,6 +9,7 @@ import type {
 import { BOARD, type BoardCase } from './board.js';
 import { login, seedId, upsert } from './client.js';
 import { seedCoverage } from './coverage.js';
+import { seedConditions } from './history.js';
 import { TEST_MODE_SUBSCRIBER, checkEligibility, eligibilitySummary, type EligibilityResult } from './eligibility.js';
 import { PREOP_QUESTIONNAIRE, QUESTIONNAIRE_ID, QUESTIONNAIRE_URL } from './questionnaire.js';
 import { CHECKS, READINESS_DISPLAY, SYSTEM, readiness, type CheckId, type CheckResult } from './systems.js';
@@ -78,6 +79,7 @@ async function seedCase(kase: BoardCase): Promise<string> {
     : TEST_MODE_SUBSCRIBER;
   const eligibility = await checkEligibility(plan);
   await seedCoverage(kase.key, `Patient/${patient.id}`, plan, eligibility);
+  await seedConditions(kase.key, `Patient/${patient.id}`);
 
   if (!kase.checks) {
     return `  ${label(kase)}  ${READINESS_DISPLAY.unknown}  ${coverageNote(eligibility)}`;

@@ -1,6 +1,7 @@
 import type { JSX } from 'react';
 import { useParams } from 'react-router';
 import { BackLink } from '../components/BackLink';
+import { RelevantHistory } from '../components/RelevantHistory';
 import { StatusPill } from '../components/StatusPill';
 import { useBoard } from '../lib/fhir';
 import { CHECK_LABEL, READINESS_LABEL, READINESS_TONE, type CheckResult, type Tone } from '../lib/model';
@@ -87,6 +88,10 @@ export function PreopDetailPage(): JSX.Element {
             </div>
           </div>
         )}
+      </div>
+
+      <div style={{ marginTop: 18 }}>
+        <RelevantHistory conditions={item.history} />
       </div>
     </div>
   );

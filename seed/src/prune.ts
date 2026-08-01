@@ -12,10 +12,12 @@
 import type { Bundle, ResourceType } from '@medplum/fhirtypes';
 import { BOARD } from './board.js';
 import { login, medplum } from './client.js';
+import { HISTORY } from './history.js';
 import { COHORT, historyDays } from './recovery/cohort.js';
 import { SYSTEM } from './systems.js';
 
 const TYPES: ResourceType[] = [
+  'Condition',
   'Observation',
   'DiagnosticReport',
   'CoverageEligibilityResponse',
@@ -41,6 +43,7 @@ function validIdentifiers(): Set<string> {
 
   for (const kase of BOARD) {
     valid.add(kase.key);
+    (HISTORY[kase.key] ?? []).forEach((_, i) => valid.add(`${kase.key}-condition-${i}`));
     for (const suffix of ['sr', 'appt', 'qr', 'task', 'coverage', 'eligibility']) {
       valid.add(`${kase.key}-${suffix}`);
     }
@@ -48,6 +51,7 @@ function validIdentifiers(): Set<string> {
 
   for (const patient of COHORT) {
     valid.add(patient.key);
+    (HISTORY[patient.key] ?? []).forEach((_, i) => valid.add(`${patient.key}-condition-${i}`));
     for (const suffix of ['procedure', 'insole', 'recovery-task', 'coverage', 'eligibility']) {
       valid.add(`${patient.key}-${suffix}`);
     }

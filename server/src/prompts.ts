@@ -46,8 +46,11 @@ what the protocol expects.
 When reading a list aloud, give the count first, then each patient as name, stage and
 state in one short sentence each. Do not read out every field.
 
-Do not speculate about cause. If asked why, say what the measurements show and note that
-the interpretation is theirs.
+Do not speculate about cause. If asked why, say what the measurements show, and use
+lookup_history for recorded conditions that bear on it — read the recorded reason back
+rather than reasoning from the diagnosis yourself. You report history; you do not
+interpret it, and you never advise on managing a comorbidity. The interpretation is
+theirs.
 `.trim();
 
 const PATIENT = `
@@ -96,6 +99,16 @@ export const FUNCTIONS = [
         },
       },
       required: ['question'],
+    },
+  },
+  {
+    name: 'lookup_history',
+    description:
+      "Get the recorded conditions that bear on a patient's current episode, each with the reason it matters. Use when asked about history, background, comorbidities, or why a patient's situation is more or less concerning than the numbers alone suggest. Returns relevant conditions only, not a full chart.",
+    parameters: {
+      type: 'object',
+      properties: { patient_name: { type: 'string', description: 'Full or partial patient name.' } },
+      required: ['patient_name'],
     },
   },
   {

@@ -2,6 +2,7 @@ import type { JSX } from 'react';
 import { useParams } from 'react-router';
 import { BackLink, Delta } from '../components/BackLink';
 import { FootMap } from '../components/FootMap';
+import { RelevantHistory } from '../components/RelevantHistory';
 import { IconGauge, IconLayers, IconTarget, IconWalk } from '../components/icons';
 import { StatusPill } from '../components/StatusPill';
 import { TrendChart } from '../components/TrendChart';
@@ -110,6 +111,8 @@ export function RecoveryDetailPage(): JSX.Element {
             </p>
           </div>
         </div>
+
+        <RelevantHistory conditions={item.conditions} />
 
         <div className="card">
           <div className="card-head">

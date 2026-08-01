@@ -7,6 +7,7 @@
 import type { ResourceType } from '@medplum/fhirtypes';
 import { BOARD } from './board.js';
 import { login, medplum } from './client.js';
+import { conditionCount } from './history.js';
 import { COHORT, historyDays } from './recovery/cohort.js';
 import { SYSTEM } from './systems.js';
 
@@ -25,6 +26,7 @@ const CHECKS: Check[] = [
   { type: 'ServiceRequest', query: '', expected: BOARD.length, label: 'ServiceRequest' },
   { type: 'QuestionnaireResponse', query: '', expected: BOARD.filter((c) => c.checks).length, label: 'QuestionnaireResponse' },
   { type: 'Questionnaire', query: '', expected: 1, label: 'Questionnaire' },
+  { type: 'Condition', query: '', expected: conditionCount(), label: 'Condition (relevant hx)' },
   // Coverage is checked for everyone now, pre-op and recovery alike.
   { type: 'Coverage', query: '', expected: BOARD.length + COHORT.length, label: 'Coverage' },
   {

@@ -806,6 +806,11 @@ input:focus-visible {
   font-size: 13.5px;
 }
 
+.check .since {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
 .check .said {
   color: var(--text-secondary);
   font-size: 14px;

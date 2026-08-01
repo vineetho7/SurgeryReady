@@ -22,6 +22,8 @@ export const SYSTEM = {
   zone: 'http://surgeryready.local/zone',
   /** Derived post-operative recovery state. */
   recoveryState: 'http://surgeryready.local/recovery-state',
+  /** Comorbidities that bear on the current episode. */
+  condition: 'http://surgeryready.local/condition',
 } as const;
 
 /** The six things the agent confirms on every pre-op call, in the order it asks them. */

@@ -60,6 +60,35 @@ export async function coverageFor(patientName: string): Promise<
   };
 }
 
+/**
+ * Comorbidities that bear on the current episode.
+ *
+ * Each carries the recorded reason it matters here, so the agent reads a clinician's
+ * sentence rather than reasoning from a diagnosis to a consequence. It reports history;
+ * it does not interpret it or advise on managing it.
+ */
+export async function historyFor(
+  patientName: string
+): Promise<{ name: string; conditions: { condition: string; bearing: string; since?: string }[] } | undefined> {
+  if (!authenticated) {
+    return undefined;
+  }
+  const patients = await medplum.searchResources('Patient', `name=${encodeURIComponent(patientName)}&_count=5`);
+  const patient: Patient | undefined = patients[0];
+  if (!patient) {
+    return undefined;
+  }
+  const conditions = await medplum.searchResources('Condition', `subject=Patient/${patient.id}&_count=20`);
+  return {
+    name: `${patient.name?.[0]?.given?.join(' ') ?? ''} ${patient.name?.[0]?.family ?? ''}`.trim(),
+    conditions: conditions.map((c) => ({
+      condition: c.code?.text ?? c.code?.coding?.[0]?.display ?? 'Unknown',
+      bearing: c.note?.[0]?.text ?? '',
+      since: c.onsetDateTime?.slice(0, 4),
+    })),
+  };
+}
+
 export interface BoardEntry {
   name: string;
   stage: 'pre-op' | 'recovery';

@@ -1,6 +1,7 @@
 import type { Device, DiagnosticReport, Observation, ObservationComponent, Patient, Procedure, Task } from '@medplum/fhirtypes';
 import { medplum, seedId, upsert } from '../client.js';
 import { seedCoverage } from '../coverage.js';
+import { seedConditions } from '../history.js';
 import { TEST_MODE_SUBSCRIBER, checkEligibility } from '../eligibility.js';
 import { SYSTEM } from '../systems.js';
 import { COHORT, historyDays, sessionFor, type CohortPatient } from './cohort.js';
@@ -116,6 +117,7 @@ async function seedPatient(patient: CohortPatient): Promise<string> {
   // an incomplete chart — and an agent asked about insurance can only say it has none.
   const eligibility = await checkEligibility(TEST_MODE_SUBSCRIBER);
   await seedCoverage(patient.key, `Patient/${fhirPatient.id}`, TEST_MODE_SUBSCRIBER, eligibility);
+  await seedConditions(patient.key, `Patient/${fhirPatient.id}`);
 
   let previous: RecoveryAssessment | undefined;
   let latest: RecoveryAssessment | undefined;

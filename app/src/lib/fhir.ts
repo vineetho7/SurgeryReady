@@ -29,6 +29,12 @@ export interface PreopCheck {
   utterance: string;
 }
 
+export interface RelevantCondition {
+  condition: string;
+  bearing: string;
+  since?: string;
+}
+
 export interface PreopCase {
   patientId: string;
   name: string;
@@ -37,6 +43,7 @@ export interface PreopCase {
   readiness: Readiness;
   /** What the payer said when asked, from the stored CoverageEligibilityResponse. */
   coverage?: { verified: boolean; disposition: string; insurer?: string };
+  history: RelevantCondition[];
   checks: PreopCheck[];
   barrier?: string;
 }
@@ -73,6 +80,8 @@ export interface RecoveryCase {
   zones: ZoneReading[];
   stanceMinutes: number;
   history: RecoveryDay[];
+  /** Comorbidities that change how the verdict should be read. */
+  conditions: RelevantCondition[];
 }
 
 export interface Board {
@@ -108,7 +117,8 @@ function recoveryStateOf(report: DiagnosticReport): RecoveryState {
 // ── The load ──────────────────────────────────────────────────────────
 
 async function loadBoard(medplum: ReturnType<typeof useMedplum>): Promise<Board> {
-  const [patients, appointments, responses, tasks, reports, observations, procedures, eligibility] = await Promise.all([
+  const [patients, appointments, responses, tasks, reports, observations, procedures, eligibility, conditions] =
+    await Promise.all([
     medplum.searchResources('Patient', '_count=200'),
     medplum.searchResources('Appointment', '_count=200'),
     medplum.searchResources('QuestionnaireResponse', '_count=200'),
@@ -117,7 +127,18 @@ async function loadBoard(medplum: ReturnType<typeof useMedplum>): Promise<Board>
     medplum.searchResources('Observation', '_count=400'),
     medplum.searchResources('Procedure', '_count=200'),
     medplum.searchResources('CoverageEligibilityResponse', '_count=200'),
+    medplum.searchResources('Condition', '_count=200'),
   ]);
+
+  /** Conditions carry the recorded reason they matter, so nothing downstream infers it. */
+  const historyFor = (ref: string): RelevantCondition[] =>
+    conditions
+      .filter((c) => c.subject?.reference === ref)
+      .map((c) => ({
+        condition: c.code?.text ?? c.code?.coding?.[0]?.display ?? 'Unknown',
+        bearing: c.note?.[0]?.text ?? '',
+        since: c.onsetDateTime?.slice(0, 4),
+      }));
 
   const byId = new Map(patients.map((p) => [`Patient/${p.id}`, p]));
 
@@ -142,6 +163,7 @@ async function loadBoard(medplum: ReturnType<typeof useMedplum>): Promise<Board>
       readiness: (response ? (tagValue(response, SYSTEM.readiness) as Readiness) : 'unknown') ?? 'unknown',
       checks: response ? parseChecks(response) : [],
       barrier: task?.description,
+      history: historyFor(ref),
       coverage: benefits
         ? {
             verified: benefits.outcome === 'complete',
@@ -203,6 +225,7 @@ async function loadBoard(medplum: ReturnType<typeof useMedplum>): Promise<Board>
       zones: latestObs ? parseZones(latestObs) : [],
       stanceMinutes: latestObs ? Math.round(num(latestObs, 'operated.stance') / 60) : 0,
       history,
+      conditions: historyFor(ref),
     });
   }
 
