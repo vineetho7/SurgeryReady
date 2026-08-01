@@ -2,7 +2,7 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { AUDIO, CONFIG, DEEPGRAM_AGENT_URL } from './config.js';
 import { initKnowledge, lookupProtocol } from './knowledge.js';
 import { FUNCTIONS, greetingFor, promptFor, type VoiceMode } from './prompts.js';
-import { initRecord, latestReportFor, listAttention } from './record.js';
+import { coverageFor, initRecord, latestReportFor, listAttention } from './record.js';
 
 /**
  * Voice agent bridge.
@@ -60,6 +60,15 @@ async function runFunction(name: string, args: Record<string, unknown>): Promise
       severity: grounding.severity,
       rule: grounding.rule,
     });
+  }
+
+  if (name === 'lookup_coverage') {
+    const coverage = await coverageFor(String(args.patient_name ?? ''));
+    if (!coverage) {
+      return JSON.stringify({ found: false });
+    }
+    console.log(`  medplum: coverage for ${coverage.name} (${coverage.verified ? 'verified' : 'unverified'})`);
+    return JSON.stringify({ found: true, ...coverage });
   }
 
   if (name === 'list_attention') {

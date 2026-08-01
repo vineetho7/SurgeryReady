@@ -1,5 +1,7 @@
 import type { Device, DiagnosticReport, Observation, ObservationComponent, Patient, Procedure, Task } from '@medplum/fhirtypes';
 import { medplum, seedId, upsert } from '../client.js';
+import { seedCoverage } from '../coverage.js';
+import { TEST_MODE_SUBSCRIBER, checkEligibility } from '../eligibility.js';
 import { SYSTEM } from '../systems.js';
 import { COHORT, historyDays, sessionFor, type CohortPatient } from './cohort.js';
 import {
@@ -108,6 +110,12 @@ async function seedPatient(patient: CohortPatient): Promise<string> {
     },
     `${patient.key}-insole`
   );
+
+  // Recovery patients carry coverage too. Rehab visits, follow-ups and any escalation
+  // this monitoring triggers all get billed, so a chart without an eligibility answer is
+  // an incomplete chart — and an agent asked about insurance can only say it has none.
+  const eligibility = await checkEligibility(TEST_MODE_SUBSCRIBER);
+  await seedCoverage(patient.key, `Patient/${fhirPatient.id}`, TEST_MODE_SUBSCRIBER, eligibility);
 
   let previous: RecoveryAssessment | undefined;
   let latest: RecoveryAssessment | undefined;

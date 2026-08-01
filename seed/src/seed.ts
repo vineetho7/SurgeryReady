@@ -1,7 +1,5 @@
 import type {
   Appointment,
-  Coverage,
-  CoverageEligibilityResponse,
   Patient,
   QuestionnaireResponse,
   QuestionnaireResponseItem,
@@ -10,6 +8,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { BOARD, type BoardCase } from './board.js';
 import { login, seedId, upsert } from './client.js';
+import { seedCoverage } from './coverage.js';
 import { TEST_MODE_SUBSCRIBER, checkEligibility, eligibilitySummary, type EligibilityResult } from './eligibility.js';
 import { PREOP_QUESTIONNAIRE, QUESTIONNAIRE_ID, QUESTIONNAIRE_URL } from './questionnaire.js';
 import { CHECKS, READINESS_DISPLAY, SYSTEM, readiness, type CheckId, type CheckResult } from './systems.js';
@@ -78,7 +77,7 @@ async function seedCase(kase: BoardCase): Promise<string> {
     ? { ...kase.coverage, firstName: kase.given, lastName: kase.family }
     : TEST_MODE_SUBSCRIBER;
   const eligibility = await checkEligibility(plan);
-  await seedCoverage(kase, `Patient/${patient.id}`, plan, eligibility);
+  await seedCoverage(kase.key, `Patient/${patient.id}`, plan, eligibility);
 
   if (!kase.checks) {
     return `  ${label(kase)}  ${READINESS_DISPLAY.unknown}  ${coverageNote(eligibility)}`;
@@ -143,70 +142,6 @@ async function seedCase(kase: BoardCase): Promise<string> {
   return `  ${label(kase)}  ${READINESS_DISPLAY[state]}`;
 }
 
-/**
- * Persist the eligibility check as FHIR rather than as a note.
- *
- * Coverage records what is on file; CoverageEligibilityResponse records what the payer
- * actually said when asked, with the benefit amounts it returned. Both are real R4
- * resources, so the answer lives in the chart next to everything else.
- */
-async function seedCoverage(
-  kase: BoardCase,
-  patientRef: string,
-  plan: { payerId: string; memberId: string },
-  result: EligibilityResult
-): Promise<void> {
-  const coverage = await upsert<Coverage>(
-    {
-      resourceType: 'Coverage',
-      identifier: seedId(`${kase.key}-coverage`),
-      status: result.status === 'active' ? 'active' : 'entered-in-error',
-      beneficiary: { reference: patientRef },
-      subscriberId: plan.memberId,
-      payor: [{ display: result.payerName ?? `Payer ${plan.payerId}` }],
-      class: result.planDetails ? [{ type: { text: 'plan' }, value: result.planDetails }] : undefined,
-    },
-    `${kase.key}-coverage`
-  );
-
-  const items = [];
-  if (result.deductibleRemaining !== undefined) {
-    items.push({ name: 'Deductible remaining', value: result.deductibleRemaining });
-  }
-  if (result.outOfPocketRemaining !== undefined) {
-    items.push({ name: 'Out of pocket remaining', value: result.outOfPocketRemaining });
-  }
-  if (result.copay !== undefined) {
-    items.push({ name: 'Copay', value: result.copay });
-  }
-
-  await upsert<CoverageEligibilityResponse>(
-    {
-      resourceType: 'CoverageEligibilityResponse',
-      identifier: seedId(`${kase.key}-eligibility`),
-      status: 'active',
-      purpose: ['benefits'],
-      patient: { reference: patientRef },
-      created: result.checkedAt,
-      request: { display: 'Stedi real-time eligibility (270/271), test mode' },
-      // `outcome` is the payer's verdict; `disposition` is the sentence a human reads.
-      outcome: result.status === 'active' ? 'complete' : 'error',
-      disposition: eligibilitySummary(result),
-      insurer: { display: result.payerName ?? `Payer ${plan.payerId}` },
-      insurance: [
-        {
-          coverage: { reference: `Coverage/${coverage.id}` },
-          inforce: result.status === 'active',
-          item: items.map((item) => ({
-            category: { text: item.name },
-            benefit: [{ type: { text: item.name }, allowedMoney: { value: item.value, currency: 'USD' } }],
-          })),
-        },
-      ],
-    },
-    `${kase.key}-eligibility`
-  );
-}
 
 function coverageNote(result: EligibilityResult): string {
   switch (result.status) {

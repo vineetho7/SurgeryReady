@@ -25,6 +25,41 @@ export async function initRecord(): Promise<void> {
   console.log('Medplum client authenticated.');
 }
 
+/**
+ * What the payer said about this patient, from the stored eligibility answer.
+ *
+ * Reads the disposition written at check time rather than calling the payer again: the
+ * agent reports what is in the chart, and a live call mid-conversation would add a
+ * second of silence for an answer that is already recorded.
+ */
+export async function coverageFor(patientName: string): Promise<
+  { name: string; verified: boolean; insurer?: string; disposition: string; checkedAt?: string } | undefined
+> {
+  if (!authenticated) {
+    return undefined;
+  }
+  const patients = await medplum.searchResources('Patient', `name=${encodeURIComponent(patientName)}&_count=5`);
+  const patient: Patient | undefined = patients[0];
+  if (!patient) {
+    return undefined;
+  }
+  const responses = await medplum.searchResources(
+    'CoverageEligibilityResponse',
+    `patient=Patient/${patient.id}&_count=1`
+  );
+  const response = responses[0];
+  if (!response) {
+    return undefined;
+  }
+  return {
+    name: `${patient.name?.[0]?.given?.join(' ') ?? ''} ${patient.name?.[0]?.family ?? ''}`.trim(),
+    verified: response.outcome === 'complete',
+    insurer: response.insurer?.display,
+    disposition: response.disposition ?? 'No detail recorded.',
+    checkedAt: response.created,
+  };
+}
+
 export interface BoardEntry {
   name: string;
   stage: 'pre-op' | 'recovery';

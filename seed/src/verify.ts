@@ -25,6 +25,14 @@ const CHECKS: Check[] = [
   { type: 'ServiceRequest', query: '', expected: BOARD.length, label: 'ServiceRequest' },
   { type: 'QuestionnaireResponse', query: '', expected: BOARD.filter((c) => c.checks).length, label: 'QuestionnaireResponse' },
   { type: 'Questionnaire', query: '', expected: 1, label: 'Questionnaire' },
+  // Coverage is checked for everyone now, pre-op and recovery alike.
+  { type: 'Coverage', query: '', expected: BOARD.length + COHORT.length, label: 'Coverage' },
+  {
+    type: 'CoverageEligibilityResponse',
+    query: '',
+    expected: BOARD.length + COHORT.length,
+    label: 'CoverageEligibilityResponse',
+  },
   { type: 'Device', query: '', expected: COHORT.length, label: 'Device (insoles)' },
   { type: 'Procedure', query: '', expected: COHORT.length, label: 'Procedure' },
   { type: 'Observation', query: '', expected: sessions, label: 'Observation (sessions)' },

@@ -12,7 +12,7 @@
 import type { Bundle, ResourceType } from '@medplum/fhirtypes';
 import { BOARD } from './board.js';
 import { login, medplum } from './client.js';
-import { COHORT } from './recovery/cohort.js';
+import { COHORT, historyDays } from './recovery/cohort.js';
 import { SYSTEM } from './systems.js';
 
 const TYPES: ResourceType[] = [
@@ -29,19 +29,40 @@ const TYPES: ResourceType[] = [
   'Patient',
 ];
 
-/** `maria-santos-session-3` belongs to `maria-santos`; `colin-reyes-…` belongs to nobody. */
-function ownedBy(identifierValue: string, keys: Set<string>): boolean {
-  for (const key of keys) {
-    if (identifierValue === key || identifierValue.startsWith(`${key}-`)) {
-      return true;
+/**
+ * Every identifier the current fixtures should produce.
+ *
+ * An exact allowlist rather than a key-prefix test, because shrinking the history window
+ * orphans sessions belonging to patients who still exist: `ana-delgado-session-3` has a
+ * living owner but no longer a valid day, and a prefix check waves it through.
+ */
+function validIdentifiers(): Set<string> {
+  const valid = new Set<string>();
+
+  for (const kase of BOARD) {
+    valid.add(kase.key);
+    for (const suffix of ['sr', 'appt', 'qr', 'task', 'coverage', 'eligibility']) {
+      valid.add(`${kase.key}-${suffix}`);
     }
   }
-  return false;
+
+  for (const patient of COHORT) {
+    valid.add(patient.key);
+    for (const suffix of ['procedure', 'insole', 'recovery-task', 'coverage', 'eligibility']) {
+      valid.add(`${patient.key}-${suffix}`);
+    }
+    for (const day of historyDays(patient)) {
+      valid.add(`${patient.key}-session-${day}`);
+      valid.add(`${patient.key}-report-${day}`);
+    }
+  }
+
+  return valid;
 }
 
 async function main(): Promise<void> {
   await login();
-  const keys = new Set([...BOARD.map((b) => b.key), ...COHORT.map((c) => c.key)]);
+  const valid = validIdentifiers();
   const dryRun = !process.argv.includes('--delete');
 
   let orphans = 0;
@@ -53,7 +74,7 @@ async function main(): Promise<void> {
     for (const resource of resources) {
       const identifier = (resource as { identifier?: unknown }).identifier;
       const value = Array.isArray(identifier) ? identifier[0]?.value : (identifier as { value?: string } | undefined)?.value;
-      if (!value || ownedBy(value, keys)) {
+      if (!value || valid.has(value)) {
         continue;
       }
       orphans++;

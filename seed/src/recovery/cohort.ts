@@ -72,23 +72,10 @@ export const COHORT: CohortPatient[] = [
     trajectory: 'overloading',
     serial: 'INS-4471-C',
   },
-  {
-    key: 'peter-nowak',
-    given: 'Peter',
-    family: 'Nowak',
-    birthDate: '1961-05-30',
-    phone: '+1-415-555-0233',
-    procedure: 'achilles-repair',
-    procedureDisplay: 'Achilles repair',
-    side: 'left',
-    postOpDay: 24,
-    trajectory: 'late-recovery',
-    serial: 'INS-4471-D',
-  },
 ];
 
 /** How many days of history to generate per patient. */
-export const HISTORY_DAYS = 10;
+export const HISTORY_DAYS = 6;
 
 // ── Deterministic noise ───────────────────────────────────────────────
 

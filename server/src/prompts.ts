@@ -99,6 +99,16 @@ export const FUNCTIONS = [
     },
   },
   {
+    name: 'lookup_coverage',
+    description:
+      "Get the insurance eligibility answer for a patient: whether the payer confirmed active coverage, and the plan, deductible, copay and coinsurance it reported. Use for any question about insurance, coverage, benefits, cost, deductible or what the patient will owe.",
+    parameters: {
+      type: 'object',
+      properties: { patient_name: { type: 'string', description: 'Full or partial patient name.' } },
+      required: ['patient_name'],
+    },
+  },
+  {
     name: 'list_attention',
     description:
       "List every patient who currently needs attention, across pre-op readiness and post-op recovery. Call this for any question about who needs attention, who is flagged, what needs doing, who has not been called, or what the board looks like — anything not about one named patient.",
